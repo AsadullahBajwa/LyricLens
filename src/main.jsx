@@ -1,24 +1,46 @@
-import React, { useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import {
   AlertCircle,
+  Check,
+  ChevronDown,
   Clipboard,
   Download,
   Eraser,
+  FileText,
   FileUp,
+  History,
   Loader2,
   Music2,
-  RefreshCw,
-  Sparkles
+  Save,
+  Search,
+  Sparkles,
+  Trash2,
+  Wand2
 } from "lucide-react";
 import "./styles.css";
+
+const STORAGE_KEYS = {
+  draft: "lyriclens:draft:v2",
+  history: "lyriclens:history:v1"
+};
+
+const MAX_HISTORY_ITEMS = 8;
 
 const emptyForm = {
   title: "",
   artist: "",
   lyrics: "",
-  detail: "plain"
+  detail: "plain",
+  focus: ["themes", "context"]
 };
+
+const focusOptions = [
+  ["themes", "Themes"],
+  ["craft", "Craft"],
+  ["context", "Context"],
+  ["ambiguity", "Ambiguity"]
+];
 
 const sectionConfig = [
   ["overallMeaning", "1. Overall Meaning"],
@@ -31,19 +53,58 @@ const sectionConfig = [
 ];
 
 function App() {
-  const [form, setForm] = useState(emptyForm);
+  const [form, setForm] = useState(createInitialForm);
   const [result, setResult] = useState(null);
   const [error, setError] = useState("");
   const [status, setStatus] = useState("idle");
   const [copied, setCopied] = useState(false);
+  const [history, setHistory] = useState(loadHistory);
+  const [draftSavedAt, setDraftSavedAt] = useState(() => readStorage(STORAGE_KEYS.draft)?.savedAt || "");
+  const [resultQuery, setResultQuery] = useState("");
+  const [collapsedSections, setCollapsedSections] = useState([]);
   const fileInput = useRef(null);
 
-  const characterCount = form.lyrics.length;
+  const lyricStats = useMemo(() => getLyricStats(form.lyrics), [form.lyrics]);
   const canSubmit = form.lyrics.trim().length > 0 && status !== "loading";
   const plainText = useMemo(() => (result ? resultToText(result) : ""), [result]);
+  const markdownText = useMemo(
+    () => (result ? resultToMarkdown(result, form) : ""),
+    [form.artist, form.title, result]
+  );
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      if (!hasDraftContent(form)) {
+        window.localStorage.removeItem(STORAGE_KEYS.draft);
+        setDraftSavedAt("");
+        return;
+      }
+
+      const savedAt = new Date().toISOString();
+      saveStorage(STORAGE_KEYS.draft, { ...form, focus: normalizeFocus(form.focus), savedAt });
+      setDraftSavedAt(savedAt);
+    }, 350);
+
+    return () => window.clearTimeout(timer);
+  }, [form]);
+
+  useEffect(() => {
+    saveStorage(STORAGE_KEYS.history, history);
+  }, [history]);
 
   function updateField(field, value) {
     setForm((current) => ({ ...current, [field]: value }));
+  }
+
+  function toggleFocus(option) {
+    setForm((current) => {
+      const focus = normalizeFocus(current.focus);
+      const next = focus.includes(option)
+        ? focus.filter((item) => item !== option)
+        : [...focus, option];
+
+      return { ...current, focus: next.length ? next : focus };
+    });
   }
 
   async function interpretLyrics(event) {
@@ -57,11 +118,15 @@ function App() {
     setError("");
     setCopied(false);
 
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), 70000);
+
     try {
       const response = await fetch("/api/interpret", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form)
+        body: JSON.stringify({ ...form, focus: normalizeFocus(form.focus) }),
+        signal: controller.signal
       });
 
       const data = await response.json();
@@ -72,9 +137,20 @@ function App() {
 
       setResult(data.interpretation);
       setStatus("complete");
+      setResultQuery("");
+      setCollapsedSections([]);
+      rememberInterpretation(form, data.interpretation);
     } catch (err) {
       setStatus("idle");
-      setError(err instanceof Error ? err.message : "Something went wrong.");
+      setError(
+        err?.name === "AbortError"
+          ? "Interpretation timed out. Please try a shorter lyric excerpt."
+          : err instanceof Error
+            ? err.message
+            : "Something went wrong."
+      );
+    } finally {
+      window.clearTimeout(timeout);
     }
   }
 
@@ -85,34 +161,108 @@ function App() {
     window.setTimeout(() => setCopied(false), 1800);
   }
 
-  function downloadResult() {
-    if (!plainText) return;
-    const filename = `${form.artist || "artist"}-${form.title || "lyrics"}-interpretation`
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/(^-|-$)/g, "");
-    const blob = new Blob([plainText], { type: "text/plain" });
+  function downloadResult(format = "txt") {
+    const content = format === "md" ? markdownText : plainText;
+    if (!content) return;
+
+    const filename = makeFilename(form, `interpretation.${format}`);
+    const blob = new Blob([content], {
+      type: format === "md" ? "text/markdown" : "text/plain"
+    });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = `${filename || "lyriclens-interpretation"}.txt`;
+    link.download = filename;
     link.click();
     URL.revokeObjectURL(url);
   }
 
+  function saveDraftNow() {
+    const savedAt = new Date().toISOString();
+    saveStorage(STORAGE_KEYS.draft, { ...form, focus: normalizeFocus(form.focus), savedAt });
+    setDraftSavedAt(savedAt);
+  }
+
+  function cleanLyrics() {
+    updateField("lyrics", normalizeLyrics(form.lyrics));
+  }
+
   function clearAll() {
-    setForm(emptyForm);
+    setForm({ ...emptyForm, focus: [...emptyForm.focus] });
     setResult(null);
     setError("");
     setStatus("idle");
+    setResultQuery("");
+    setCollapsedSections([]);
+    window.localStorage.removeItem(STORAGE_KEYS.draft);
+    setDraftSavedAt("");
   }
 
   async function loadFile(event) {
     const file = event.target.files?.[0];
     if (!file) return;
     const text = await file.text();
-    updateField("lyrics", text);
+    const title = file.name.replace(/\.[^.]+$/, "");
+    setForm((current) => ({
+      ...current,
+      title: current.title || title,
+      lyrics: text
+    }));
     event.target.value = "";
+  }
+
+  function rememberInterpretation(submittedForm, interpretation) {
+    const entry = {
+      id: `${Date.now()}`,
+      title: submittedForm.title.trim(),
+      artist: submittedForm.artist.trim(),
+      detail: submittedForm.detail,
+      focus: normalizeFocus(submittedForm.focus),
+      lyrics: submittedForm.lyrics,
+      interpretation,
+      createdAt: new Date().toISOString()
+    };
+    const fingerprint = getHistoryFingerprint(entry);
+
+    setHistory((current) => [
+      entry,
+      ...current.filter((item) => getHistoryFingerprint(item) !== fingerprint)
+    ].slice(0, MAX_HISTORY_ITEMS));
+  }
+
+  function restoreHistory(entry) {
+    setForm({
+      title: entry.title || "",
+      artist: entry.artist || "",
+      lyrics: entry.lyrics || "",
+      detail: entry.detail || "plain",
+      focus: normalizeFocus(entry.focus)
+    });
+    setResult(entry.interpretation);
+    setStatus("complete");
+    setError("");
+    setCopied(false);
+    setResultQuery("");
+    setCollapsedSections([]);
+  }
+
+  function removeHistoryEntry(id) {
+    setHistory((current) => current.filter((entry) => entry.id !== id));
+  }
+
+  function toggleSection(sectionKey) {
+    setCollapsedSections((current) =>
+      current.includes(sectionKey)
+        ? current.filter((key) => key !== sectionKey)
+        : [...current, sectionKey]
+    );
+  }
+
+  function jumpToSection(sectionKey) {
+    document.getElementById(`result-${sectionKey}`)?.scrollIntoView({
+      behavior: "smooth",
+      block: "start"
+    });
   }
 
   return (
@@ -136,6 +286,15 @@ function App() {
                 <span key={index} style={{ "--level": `${28 + ((index * 19) % 54)}%` }} />
               ))}
             </div>
+          </div>
+
+          <div className="workspace-strip" aria-label="Lyric stats">
+            <Metric label="Words" value={lyricStats.words.toLocaleString()} />
+            <Metric label="Lines" value={lyricStats.lines.toLocaleString()} />
+            <Metric
+              label="Draft"
+              value={draftSavedAt ? formatTime(draftSavedAt) : "Unsaved"}
+            />
           </div>
 
           <div className="song-fields">
@@ -173,6 +332,24 @@ function App() {
             ))}
           </fieldset>
 
+          <fieldset className="lens-grid">
+            <legend>Lens</legend>
+            {focusOptions.map(([option, label]) => {
+              const selected = normalizeFocus(form.focus).includes(option);
+              return (
+                <label key={option} className={selected ? "active" : ""}>
+                  <input
+                    type="checkbox"
+                    checked={selected}
+                    disabled={selected && normalizeFocus(form.focus).length === 1}
+                    onChange={() => toggleFocus(option)}
+                  />
+                  <span>{label}</span>
+                </label>
+              );
+            })}
+          </fieldset>
+
           <label className="lyrics-box">
             <span>Lyrics</span>
             <textarea
@@ -184,7 +361,7 @@ function App() {
           </label>
 
           <div className="composer-footer">
-            <p>{characterCount.toLocaleString()} characters</p>
+            <p>{lyricStats.characters.toLocaleString()} characters</p>
             <div className="button-row">
               <input
                 ref={fileInput}
@@ -201,6 +378,26 @@ function App() {
                 onClick={() => fileInput.current?.click()}
               >
                 <FileUp size={18} />
+              </button>
+              <button
+                type="button"
+                className="icon-button"
+                aria-label="Clean lyric formatting"
+                title="Clean lyric formatting"
+                onClick={cleanLyrics}
+                disabled={!form.lyrics}
+              >
+                <Wand2 size={18} />
+              </button>
+              <button
+                type="button"
+                className="icon-button"
+                aria-label="Save draft"
+                title="Save draft"
+                onClick={saveDraftNow}
+                disabled={!hasDraftContent(form)}
+              >
+                <Save size={18} />
               </button>
               <button
                 type="button"
@@ -245,27 +442,80 @@ function App() {
                 onClick={copyResult}
                 disabled={!result}
               >
-                {copied ? <RefreshCw size={18} /> : <Clipboard size={18} />}
+                {copied ? <Check size={18} /> : <Clipboard size={18} />}
               </button>
               <button
                 type="button"
                 className="icon-button"
-                aria-label="Download interpretation"
-                title="Download interpretation"
-                onClick={downloadResult}
+                aria-label="Download text interpretation"
+                title="Download text interpretation"
+                onClick={() => downloadResult("txt")}
                 disabled={!result}
               >
                 <Download size={18} />
               </button>
+              <button
+                type="button"
+                className="icon-button"
+                aria-label="Download markdown interpretation"
+                title="Download markdown interpretation"
+                onClick={() => downloadResult("md")}
+                disabled={!result}
+              >
+                <FileText size={18} />
+              </button>
             </div>
           </header>
 
+          <HistoryPanel history={history} onRestore={restoreHistory} onRemove={removeHistoryEntry} />
+
+          {result ? (
+            <div className="result-tools">
+              <label className="search-field">
+                <Search size={17} />
+                <input
+                  value={resultQuery}
+                  onChange={(event) => setResultQuery(event.target.value)}
+                  placeholder="Search sections"
+                />
+              </label>
+              <div className="section-jump" aria-label="Result sections">
+                {sectionConfig.map(([key], index) => (
+                  <button
+                    key={key}
+                    type="button"
+                    aria-label={`Jump to section ${index + 1}`}
+                    onClick={() => jumpToSection(key)}
+                  >
+                    {index + 1}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : null}
+
           {status === "loading" ? <LoadingState /> : null}
           {!result && status !== "loading" ? <EmptyState /> : null}
-          {result && status !== "loading" ? <Interpretation result={result} /> : null}
+          {result && status !== "loading" ? (
+            <Interpretation
+              collapsedSections={collapsedSections}
+              onToggleSection={toggleSection}
+              query={resultQuery}
+              result={result}
+            />
+          ) : null}
         </section>
       </section>
     </main>
+  );
+}
+
+function Metric({ label, value }) {
+  return (
+    <div>
+      <span>{label}</span>
+      <strong>{value}</strong>
+    </div>
   );
 }
 
@@ -289,22 +539,82 @@ function LoadingState() {
   );
 }
 
-function Interpretation({ result }) {
+function HistoryPanel({ history, onRestore, onRemove }) {
+  if (!history.length) return null;
+
+  return (
+    <section className="history-panel" aria-label="Recent interpretations">
+      <div className="history-heading">
+        <History size={17} />
+        <span>Recent</span>
+      </div>
+      <div className="history-list">
+        {history.map((entry) => (
+          <div className="history-item" key={entry.id}>
+            <button type="button" className="history-main" onClick={() => onRestore(entry)}>
+              <strong>{entry.title || "Untitled lyrics"}</strong>
+              <span>{[entry.artist, formatTime(entry.createdAt)].filter(Boolean).join(" / ")}</span>
+            </button>
+            <button
+              type="button"
+              className="icon-button tiny"
+              aria-label={`Remove ${entry.title || "recent interpretation"}`}
+              title="Remove"
+              onClick={() => onRemove(entry.id)}
+            >
+              <Trash2 size={15} />
+            </button>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function Interpretation({ result, query, collapsedSections, onToggleSection }) {
+  const visibleSections = sectionConfig.filter(([key, title]) =>
+    sectionMatches(title, result[key], query)
+  );
+
+  if (!visibleSections.length) {
+    return (
+      <div className="no-results">
+        <Search size={24} />
+        <p>No matching sections.</p>
+      </div>
+    );
+  }
+
   return (
     <div className="section-stack">
-      {sectionConfig.map(([key, title]) => (
-        <article className="result-section" key={key}>
-          <h3>{title}</h3>
-          <SectionBody type={key} value={result[key]} />
-        </article>
-      ))}
+      {visibleSections.map(([key, title]) => {
+        const collapsed = collapsedSections.includes(key);
+        return (
+          <article className="result-section" id={`result-${key}`} key={key}>
+            <button
+              type="button"
+              className="section-heading"
+              aria-expanded={!collapsed}
+              onClick={() => onToggleSection(key)}
+            >
+              <h3>{title}</h3>
+              <ChevronDown className={collapsed ? "chevron collapsed" : "chevron"} size={18} />
+            </button>
+            {!collapsed ? <SectionBody type={key} value={result[key]} query={query} /> : null}
+          </article>
+        );
+      })}
     </div>
   );
 }
 
-function SectionBody({ type, value }) {
+function SectionBody({ type, value, query }) {
   if (typeof value === "string") {
-    return <p>{value}</p>;
+    return (
+      <p>
+        <HighlightedText text={value} query={query} />
+      </p>
+    );
   }
 
   if (!Array.isArray(value) || value.length === 0) {
@@ -316,8 +626,12 @@ function SectionBody({ type, value }) {
       <div className="explain-list">
         {value.map((item, index) => (
           <div className="list-item" key={`${item.section}-${index}`}>
-            <strong>{item.section}</strong>
-            <p>{item.explanation}</p>
+            <strong>
+              <HighlightedText text={item.section} query={query} />
+            </strong>
+            <p>
+              <HighlightedText text={item.explanation} query={query} />
+            </p>
           </div>
         ))}
       </div>
@@ -329,8 +643,12 @@ function SectionBody({ type, value }) {
       <div className="phrase-grid">
         {value.map((item, index) => (
           <div className="phrase" key={`${item.phrase}-${index}`}>
-            <span>{item.phrase}</span>
-            <p>{item.meaning}</p>
+            <span>
+              <HighlightedText text={item.phrase} query={query} />
+            </span>
+            <p>
+              <HighlightedText text={item.meaning} query={query} />
+            </p>
           </div>
         ))}
       </div>
@@ -342,9 +660,15 @@ function SectionBody({ type, value }) {
       <div className="explain-list">
         {value.map((item, index) => (
           <div className="list-item" key={`${item.reference}-${index}`}>
-            <strong>{item.reference}</strong>
-            <em>{item.certainty}</em>
-            <p>{item.explanation}</p>
+            <strong>
+              <HighlightedText text={item.reference} query={query} />
+            </strong>
+            <em>
+              <HighlightedText text={item.certainty} query={query} />
+            </em>
+            <p>
+              <HighlightedText text={item.explanation} query={query} />
+            </p>
           </div>
         ))}
       </div>
@@ -355,11 +679,33 @@ function SectionBody({ type, value }) {
     <div className="explain-list">
       {value.map((item, index) => (
         <div className="list-item" key={`${item.lineHint}-${index}`}>
-          <strong>{item.lineHint}</strong>
-          <p>{item.possibleMeanings}</p>
+          <strong>
+            <HighlightedText text={item.lineHint} query={query} />
+          </strong>
+          <p>
+            <HighlightedText text={item.possibleMeanings} query={query} />
+          </p>
         </div>
       ))}
     </div>
+  );
+}
+
+function HighlightedText({ text, query }) {
+  const value = String(text || "");
+  const needle = query.trim();
+
+  if (!needle) return value;
+
+  const matchIndex = value.toLowerCase().indexOf(needle.toLowerCase());
+  if (matchIndex === -1) return value;
+
+  return (
+    <>
+      {value.slice(0, matchIndex)}
+      <mark>{value.slice(matchIndex, matchIndex + needle.length)}</mark>
+      {value.slice(matchIndex + needle.length)}
+    </>
   );
 }
 
@@ -387,6 +733,146 @@ function resultToText(result) {
       return `${title}\n${lines.join("\n")}`;
     })
     .join("\n\n");
+}
+
+function resultToMarkdown(result, form) {
+  const song = [form.title || "Untitled lyrics", form.artist ? `by ${form.artist}` : ""]
+    .filter(Boolean)
+    .join(" ");
+
+  return [
+    `# ${song}`,
+    "",
+    ...sectionConfig.flatMap(([key, title]) => {
+      const value = result[key];
+      const heading = `## ${title.replace(/^\d+\.\s*/, "")}`;
+
+      if (typeof value === "string") {
+        return [heading, "", value, ""];
+      }
+
+      if (!Array.isArray(value) || value.length === 0) {
+        return [heading, "", "No clear items found.", ""];
+      }
+
+      const lines = value.map((item) => {
+        if (key === "verseByVerse") return `- **${item.section}:** ${item.explanation}`;
+        if (key === "slangAndPhrases") return `- **${item.phrase}:** ${item.meaning}`;
+        if (key === "references") {
+          return `- **${item.reference}** (${item.certainty}): ${item.explanation}`;
+        }
+        return `- **${item.lineHint}:** ${item.possibleMeanings}`;
+      });
+
+      return [heading, "", ...lines, ""];
+    })
+  ].join("\n");
+}
+
+function getLyricStats(lyrics) {
+  const trimmed = lyrics.trim();
+  return {
+    characters: lyrics.length,
+    words: trimmed ? trimmed.split(/\s+/).length : 0,
+    lines: trimmed ? lyrics.split(/\r\n|\r|\n/).filter((line) => line.trim()).length : 0
+  };
+}
+
+function normalizeLyrics(lyrics) {
+  return lyrics
+    .replace(/\r\n?/g, "\n")
+    .replace(/\u00a0/g, " ")
+    .split("\n")
+    .map((line) => line.replace(/[ \t]+$/g, "").replace(/^\s+\[/, "["))
+    .join("\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
+function sectionMatches(title, value, query) {
+  const needle = query.trim().toLowerCase();
+  if (!needle) return true;
+  return `${title} ${valueToSearch(value)}`.toLowerCase().includes(needle);
+}
+
+function valueToSearch(value) {
+  if (typeof value === "string") return value;
+  if (Array.isArray(value)) return value.map(valueToSearch).join(" ");
+  if (value && typeof value === "object") return Object.values(value).map(valueToSearch).join(" ");
+  return "";
+}
+
+function createInitialForm() {
+  const draft = readStorage(STORAGE_KEYS.draft);
+  if (!draft) return { ...emptyForm, focus: [...emptyForm.focus] };
+
+  return {
+    ...emptyForm,
+    ...draft,
+    focus: normalizeFocus(draft.focus)
+  };
+}
+
+function hasDraftContent(value) {
+  return Boolean(value.title?.trim() || value.artist?.trim() || value.lyrics?.trim());
+}
+
+function loadHistory() {
+  const value = readStorage(STORAGE_KEYS.history);
+  if (!Array.isArray(value)) return [];
+
+  return value
+    .filter((entry) => entry?.id && entry?.interpretation)
+    .map((entry) => ({ ...entry, focus: normalizeFocus(entry.focus) }))
+    .slice(0, MAX_HISTORY_ITEMS);
+}
+
+function normalizeFocus(value) {
+  const allowed = focusOptions.map(([option]) => option);
+  const selected = Array.isArray(value) ? value.filter((item) => allowed.includes(item)) : [];
+  return selected.length ? selected : [...emptyForm.focus];
+}
+
+function getHistoryFingerprint(entry) {
+  return [entry.title, entry.artist, entry.lyrics].join("\n").toLowerCase();
+}
+
+function makeFilename(form, suffix) {
+  const base = `${form.artist || "artist"}-${form.title || "lyrics"}-${suffix}`
+    .toLowerCase()
+    .replace(/[^a-z0-9.]+/g, "-")
+    .replace(/(^-|-$)/g, "");
+
+  return base || `lyriclens-${suffix}`;
+}
+
+function readStorage(key) {
+  try {
+    const raw = window.localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+function saveStorage(key, value) {
+  try {
+    window.localStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    // The app still works if storage is unavailable.
+  }
+}
+
+function formatTime(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+
+  return new Intl.DateTimeFormat(undefined, {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit"
+  }).format(date);
 }
 
 function capitalize(value) {
