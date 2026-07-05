@@ -36,6 +36,28 @@ const emptyForm = {
   focus: ["themes", "context"]
 };
 
+const demoLyrics = {
+  title: "Neon Harbor",
+  artist: "LyricLens Demo",
+  lyrics: `[Verse 1]
+I left my coat by the station lights
+With a ticket folded twice
+The city hummed in borrowed blue
+And every window looked like you
+
+[Chorus]
+Meet me down at the neon harbor
+Where the old songs learn to glow
+If we cannot keep forever
+We can keep tonight from letting go
+
+[Bridge]
+There is a map in the static
+There is a storm in the sound
+I was only running from silence
+Till your voice turned me around`
+};
+
 const focusOptions = [
   ["themes", "Themes"],
   ["craft", "Craft"],
@@ -193,6 +215,20 @@ function App() {
 
   function cleanLyrics() {
     updateField("lyrics", normalizeLyrics(form.lyrics));
+  }
+
+  function loadDemoLyrics() {
+    setForm({
+      ...emptyForm,
+      ...demoLyrics,
+      detail: "plain",
+      focus: ["themes", "craft"]
+    });
+    setResult(null);
+    setError("");
+    setStatus("idle");
+    setResultQuery("");
+    setCollapsedSections([]);
   }
 
   function clearAll() {
@@ -394,6 +430,15 @@ function App() {
                 accept=".txt,.md,.text"
                 onChange={loadFile}
               />
+              <button
+                type="button"
+                className="icon-button"
+                aria-label="Load demo lyrics"
+                title="Load demo lyrics"
+                onClick={loadDemoLyrics}
+              >
+                <Music2 size={18} />
+              </button>
               <button
                 type="button"
                 className="icon-button"

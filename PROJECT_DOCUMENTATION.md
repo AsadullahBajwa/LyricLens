@@ -39,6 +39,7 @@ The browser calls `/api/interpret`. Netlify rewrites that route to `/.netlify/fu
 - Optional song title and artist fields for extra context.
 - Explanation depth selector with `Plain`, `Deep`, and `Cautious` modes.
 - Interpretation lens selector for themes, craft, context, and ambiguity.
+- Built-in original demo lyric for quick app testing.
 - Lyric formatting cleanup plus word, line, and character stats.
 - Autosaved local drafts.
 - Recent interpretation history with one-click restore and removal.
@@ -167,6 +168,7 @@ The structured schema also includes certainty labels for references:
 The frontend keeps the user workflow simple:
 
 - Empty lyrics disable the submit button.
+- Demo lyrics can populate the composer without uploading a file.
 - Lyric stats update as the user types.
 - A character-limit meter mirrors the server-side 24,000-character maximum and disables submission when exceeded.
 - The cleanup action normalizes line endings, trims trailing whitespace, and collapses excessive blank lines.
