@@ -361,6 +361,46 @@ textarea:focus {
   clip: rect(0 0 0 0);
 }
 
+.limit-meter {
+  display: grid;
+  gap: 6px;
+  margin-top: -8px;
+}
+
+.limit-meter div {
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e3e9e5;
+}
+
+.limit-meter span {
+  display: block;
+  height: 100%;
+  max-width: 100%;
+  border-radius: inherit;
+  background: var(--teal);
+  transition:
+    width 160ms ease,
+    background 160ms ease;
+}
+
+.limit-meter p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-align: right;
+}
+
+.limit-meter.danger span {
+  background: var(--coral);
+}
+
+.limit-meter.danger p {
+  color: #7d211a;
+}
+
 .composer-footer {
   justify-content: space-between;
   gap: 12px;

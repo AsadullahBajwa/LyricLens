@@ -26,6 +26,7 @@ const STORAGE_KEYS = {
 };
 
 const MAX_HISTORY_ITEMS = 8;
+const MAX_LYRICS_CHARS = 24000;
 
 const emptyForm = {
   title: "",
@@ -65,7 +66,9 @@ function App() {
   const fileInput = useRef(null);
 
   const lyricStats = useMemo(() => getLyricStats(form.lyrics), [form.lyrics]);
-  const canSubmit = form.lyrics.trim().length > 0 && status !== "loading";
+  const lyricUsagePercent = Math.min((lyricStats.characters / MAX_LYRICS_CHARS) * 100, 100);
+  const isOverLimit = lyricStats.characters > MAX_LYRICS_CHARS;
+  const canSubmit = form.lyrics.trim().length > 0 && !isOverLimit && status !== "loading";
   const plainText = useMemo(() => (result ? resultToText(result) : ""), [result]);
   const markdownText = useMemo(
     () => (result ? resultToMarkdown(result, form) : ""),
@@ -111,6 +114,11 @@ function App() {
     event.preventDefault();
     if (!form.lyrics.trim()) {
       setError("Lyrics are required.");
+      return;
+    }
+
+    if (isOverLimit) {
+      setError(`Lyrics must stay under ${MAX_LYRICS_CHARS.toLocaleString()} characters.`);
       return;
     }
 
@@ -359,6 +367,22 @@ function App() {
               spellCheck="true"
             />
           </label>
+
+          <div
+            className={isOverLimit ? "limit-meter danger" : "limit-meter"}
+            aria-label="Lyric character limit"
+            aria-valuemax={MAX_LYRICS_CHARS}
+            aria-valuemin={0}
+            aria-valuenow={Math.min(lyricStats.characters, MAX_LYRICS_CHARS)}
+            role="meter"
+          >
+            <div>
+              <span style={{ width: `${lyricUsagePercent}%` }} />
+            </div>
+            <p>
+              {lyricStats.characters.toLocaleString()} / {MAX_LYRICS_CHARS.toLocaleString()}
+            </p>
+          </div>
 
           <div className="composer-footer">
             <p>{lyricStats.characters.toLocaleString()} characters</p>

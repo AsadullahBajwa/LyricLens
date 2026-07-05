@@ -168,6 +168,7 @@ The frontend keeps the user workflow simple:
 
 - Empty lyrics disable the submit button.
 - Lyric stats update as the user types.
+- A character-limit meter mirrors the server-side 24,000-character maximum and disables submission when exceeded.
 - The cleanup action normalizes line endings, trims trailing whitespace, and collapses excessive blank lines.
 - Drafts autosave to `localStorage` and are restored on the next visit.
 - Loading state shows while the function is running.
