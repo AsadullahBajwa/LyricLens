@@ -16,6 +16,8 @@ The application is designed around the requested output sections:
 
 The model instructions intentionally avoid long lyric quotations, unsupported claims, and invented context. When a reference is uncertain, the response schema gives the assistant a place to mark that uncertainty.
 
+The app also keeps the user workflow local-first: drafts and recent interpretations are saved in browser storage, exports are generated client-side, and the API key remains isolated in the Netlify Function.
+
 ## Application Architecture
 
 LyricLens has two main parts:
@@ -36,12 +38,18 @@ The browser calls `/api/interpret`. Netlify rewrites that route to `/.netlify/fu
 - Structured lyric interpretation with seven fixed sections.
 - Optional song title and artist fields for extra context.
 - Explanation depth selector with `Plain`, `Deep`, and `Cautious` modes.
+- Interpretation lens selector for themes, craft, context, and ambiguity.
+- Lyric formatting cleanup plus word, line, and character stats.
+- Autosaved local drafts.
+- Recent interpretation history with one-click restore and removal.
+- Search, jump controls, and collapsible sections for long interpretations.
 - Text file upload for `.txt`, `.md`, and `.text` files.
-- Copy and download actions for the generated interpretation.
+- Copy plus `.txt` and `.md` download actions for the generated interpretation.
 - Responsive desktop and mobile layout.
 - Server-side API key handling through Netlify Functions.
 - JSON Schema structured output to keep frontend rendering predictable.
 - Clear setup error if `OPENAI_API_KEY` is missing.
+- Configurable OpenAI request timeout with a clear timeout response.
 
 ## Environment Variables
 
@@ -49,6 +57,7 @@ The browser calls `/api/interpret`. Netlify rewrites that route to `/.netlify/fu
 | --- | --- | --- | --- |
 | `OPENAI_API_KEY` | Yes | None | OpenAI API key used by the Netlify Function. Never expose this in frontend code. |
 | `OPENAI_MODEL` | No | `gpt-5.5` | Model slug used by the interpretation function. |
+| `OPENAI_TIMEOUT_MS` | No | `45000` | Maximum OpenAI request time in milliseconds. Values are clamped from 5,000 to 120,000. |
 
 For local development, copy `.env.example` to `.env` and add your key.
 
@@ -116,8 +125,9 @@ The `netlify.toml` file already contains the build and function configuration, s
    - JSON body
    - required `lyrics`
    - maximum lyric length
+   - selected interpretation lenses
    - presence of `OPENAI_API_KEY`
-5. The function sends the prompt to OpenAI with a JSON Schema response format.
+5. The function sends the prompt, depth, and selected lenses to OpenAI with a JSON Schema response format.
 6. The function parses the model output and returns:
 
 ```json
@@ -143,6 +153,7 @@ The server prompt tells the assistant to:
 - Avoid inventing facts.
 - Mark uncertain references as uncertain.
 - Explain slang, cultural references, double meanings, artist context, tone, and likely intent.
+- Prioritize the selected interpretation lenses while still filling all sections.
 - Use short hints rather than long lyric quotations when discussing specific lines.
 
 The structured schema also includes certainty labels for references:
@@ -156,11 +167,18 @@ The structured schema also includes certainty labels for references:
 The frontend keeps the user workflow simple:
 
 - Empty lyrics disable the submit button.
+- Lyric stats update as the user types.
+- The cleanup action normalizes line endings, trims trailing whitespace, and collapses excessive blank lines.
+- Drafts autosave to `localStorage` and are restored on the next visit.
 - Loading state shows while the function is running.
 - Errors are shown inline in a visible alert.
 - Successful results render as separate sections.
+- Recent results are saved locally and can be restored from the output panel.
+- Result search filters sections and highlights the first match in each field.
+- Section number buttons jump to the matching output section.
+- Section headers collapse or expand long explanations.
 - Copy exports all sections as plain text.
-- Download saves a `.txt` file named from the song or artist fields when available.
+- Download saves `.txt` or `.md` files named from the song or artist fields when available.
 
 ## Troubleshooting
 
@@ -193,6 +211,10 @@ Confirm that `netlify.toml` is present in the repository and contains:
 
 The app uses Structured Outputs with a JSON Schema, which should keep the shape stable. If errors occur, inspect the Netlify Function logs for the OpenAI error message returned by `netlify/functions/interpret.mjs`.
 
+### Interpretation times out
+
+Try a shorter excerpt, choose a lower detail setting, or increase `OPENAI_TIMEOUT_MS` in Netlify within the supported 5,000 to 120,000 millisecond range.
+
 ## Verification Checklist
 
 Before deployment or after major changes:
@@ -208,8 +230,11 @@ Also test at least one desktop and one mobile viewport for:
 - No horizontal scrolling.
 - Image asset loads.
 - Submit button is disabled when lyrics are empty.
+- Lens checkboxes keep at least one selected.
+- Drafts and recent history persist after refresh.
 - Errors render clearly.
 - Result sections are readable after a successful interpretation.
+- Search, collapse, jump, and export actions work on a completed result.
 
 ## Repository Hygiene
 

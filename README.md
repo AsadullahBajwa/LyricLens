@@ -2,6 +2,8 @@
 
 LyricLens is a Netlify-ready web app that explains user-provided lyrics in plain English. It returns the exact sections requested: overall meaning, background context, verse-by-verse explanation, slang, references, ambiguous lines, and final takeaway.
 
+The workspace now includes lyric cleanup, word and line stats, autosaved drafts, recent interpretation history, selectable interpretation lenses, searchable result sections, collapsible output, and `.txt` or `.md` exports.
+
 For the full architecture, deployment, API flow, and troubleshooting notes, see [PROJECT_DOCUMENTATION.md](PROJECT_DOCUMENTATION.md).
 
 ## Local setup
@@ -49,5 +51,6 @@ For the full architecture, deployment, API flow, and troubleshooting notes, see 
 4. Add environment variables in Netlify:
    - `OPENAI_API_KEY`
    - `OPENAI_MODEL` optional, defaults to `gpt-5.5`
+   - `OPENAI_TIMEOUT_MS` optional, defaults to `45000`
 
 The app calls the OpenAI Responses API from `netlify/functions/interpret.mjs`, so the API key is never exposed to the browser.
