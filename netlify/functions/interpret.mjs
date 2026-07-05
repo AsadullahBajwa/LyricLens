@@ -1,6 +1,15 @@
 const OPENAI_RESPONSES_URL = "https://api.openai.com/v1/responses";
 const DEFAULT_MODEL = "gpt-5.5";
 const MAX_LYRICS_CHARS = 24000;
+const OPENAI_TIMEOUT_MS = clampNumber(Number(process.env.OPENAI_TIMEOUT_MS), 5000, 120000, 45000);
+const ALLOWED_FOCUS = ["themes", "craft", "context", "ambiguity"];
+
+const focusGuidance = {
+  themes: "emotional themes, story, and speaker motivation",
+  craft: "imagery, structure, rhyme, metaphor, and other writing choices",
+  context: "genre, cultural context, references, and artist context when supported",
+  ambiguity: "uncertainty, alternate readings, and places where evidence is limited"
+};
 
 const headers = {
   "Access-Control-Allow-Origin": "*",
@@ -133,6 +142,7 @@ export async function handler(event) {
   const detail = ["plain", "deep", "cautious"].includes(payload.detail)
     ? payload.detail
     : "plain";
+  const focus = normalizeFocus(payload.focus);
 
   if (!lyrics) {
     return json(400, { error: "Lyrics are required." });
@@ -148,36 +158,46 @@ export async function handler(event) {
     title ? `Song title: ${title}` : "Song title: not provided",
     artist ? `Artist: ${artist}` : "Artist: not provided",
     `Explanation depth: ${detail}`,
+    `Interpretation lenses: ${focus.map((item) => focusGuidance[item]).join("; ")}`,
     "",
     "Lyrics:",
     lyrics
   ].join("\n");
 
   try {
-    const response = await fetch(OPENAI_RESPONSES_URL, {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        model: process.env.OPENAI_MODEL || DEFAULT_MODEL,
-        instructions: systemPrompt,
-        input: userPrompt,
-        store: false,
-        reasoning: { effort: detail === "deep" ? "medium" : "low" },
-        text: {
-          format: {
-            type: "json_schema",
-            name: "lyric_interpretation",
-            strict: true,
-            schema: interpretationSchema
-          }
-        }
-      })
-    });
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), OPENAI_TIMEOUT_MS);
+    let response;
+    let data;
 
-    const data = await response.json();
+    try {
+      response = await fetch(OPENAI_RESPONSES_URL, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`,
+          "Content-Type": "application/json"
+        },
+        signal: controller.signal,
+        body: JSON.stringify({
+          model: process.env.OPENAI_MODEL || DEFAULT_MODEL,
+          instructions: systemPrompt,
+          input: userPrompt,
+          store: false,
+          reasoning: { effort: detail === "deep" ? "medium" : "low" },
+          text: {
+            format: {
+              type: "json_schema",
+              name: "lyric_interpretation",
+              strict: true,
+              schema: interpretationSchema
+            }
+          }
+        })
+      });
+      data = await response.json().catch(() => ({}));
+    } finally {
+      clearTimeout(timeout);
+    }
 
     if (!response.ok) {
       return json(response.status, {
@@ -186,10 +206,22 @@ export async function handler(event) {
     }
 
     const text = extractOutputText(data);
-    const interpretation = JSON.parse(text);
+    let interpretation;
+
+    try {
+      interpretation = JSON.parse(text);
+    } catch {
+      return json(502, { error: "The model response was not valid JSON." });
+    }
 
     return json(200, { interpretation });
   } catch (error) {
+    if (error?.name === "AbortError") {
+      return json(504, {
+        error: "The OpenAI request timed out. Try a shorter lyric excerpt or lower detail setting."
+      });
+    }
+
     return json(500, {
       error: error instanceof Error ? error.message : "Unexpected interpretation error."
     });
@@ -217,4 +249,17 @@ function json(statusCode, body) {
     headers,
     body: JSON.stringify(body)
   };
+}
+
+function normalizeFocus(value) {
+  const selected = Array.isArray(value)
+    ? value.filter((item) => ALLOWED_FOCUS.includes(item))
+    : [];
+
+  return selected.length ? selected : ["themes", "context"];
+}
+
+function clampNumber(value, min, max, fallback) {
+  if (!Number.isFinite(value)) return fallback;
+  return Math.min(Math.max(value, min), max);
 }
