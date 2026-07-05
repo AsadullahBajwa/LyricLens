@@ -498,6 +498,13 @@ button:disabled {
   border-bottom: 1px solid var(--line);
 }
 
+.history-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
 .history-heading {
   gap: 7px;
   color: var(--muted);

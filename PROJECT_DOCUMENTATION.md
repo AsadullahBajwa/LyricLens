@@ -43,6 +43,7 @@ The browser calls `/api/interpret`. Netlify rewrites that route to `/.netlify/fu
 - Lyric formatting cleanup plus word, line, and character stats.
 - Autosaved local drafts.
 - Recent interpretation history with one-click restore and removal.
+- Clear-all recent history action.
 - Search, jump controls, and collapsible sections for long interpretations.
 - Text file upload for `.txt`, `.md`, and `.text` files.
 - Copy plus `.txt` and `.md` download actions for the generated interpretation.
@@ -177,11 +178,13 @@ The frontend keeps the user workflow simple:
 - Errors are shown inline in a visible alert.
 - Successful results render as separate sections.
 - Recent results are saved locally and can be restored from the output panel.
+- Recent history can be cleared from the output panel.
 - Result search filters sections and highlights the first match in each field.
 - Section number buttons jump to the matching output section.
 - Section headers collapse or expand long explanations.
 - Copy exports all sections as plain text.
 - Download saves `.txt` or `.md` files named from the song or artist fields when available.
+- Keyboard shortcuts: `Ctrl`/`Cmd` + `Enter` submits, and `Ctrl`/`Cmd` + `S` saves a draft.
 
 ## Troubleshooting
 

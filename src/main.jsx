@@ -117,6 +117,26 @@ function App() {
     saveStorage(STORAGE_KEYS.history, history);
   }, [history]);
 
+  useEffect(() => {
+    function handleShortcuts(event) {
+      const isCommand = event.ctrlKey || event.metaKey;
+      const key = event.key.toLowerCase();
+
+      if (isCommand && key === "s") {
+        event.preventDefault();
+        if (hasDraftContent(form)) saveDraftNow();
+      }
+
+      if (isCommand && event.key === "Enter") {
+        event.preventDefault();
+        document.querySelector(".composer")?.requestSubmit();
+      }
+    }
+
+    window.addEventListener("keydown", handleShortcuts);
+    return () => window.removeEventListener("keydown", handleShortcuts);
+  }, [form]);
+
   function updateField(field, value) {
     setForm((current) => ({ ...current, [field]: value }));
   }
@@ -134,6 +154,8 @@ function App() {
 
   async function interpretLyrics(event) {
     event.preventDefault();
+    if (status === "loading") return;
+
     if (!form.lyrics.trim()) {
       setError("Lyrics are required.");
       return;
@@ -292,6 +314,10 @@ function App() {
 
   function removeHistoryEntry(id) {
     setHistory((current) => current.filter((entry) => entry.id !== id));
+  }
+
+  function clearHistory() {
+    setHistory([]);
   }
 
   function toggleSection(sectionKey) {
@@ -536,7 +562,12 @@ function App() {
             </div>
           </header>
 
-          <HistoryPanel history={history} onRestore={restoreHistory} onRemove={removeHistoryEntry} />
+          <HistoryPanel
+            history={history}
+            onClear={clearHistory}
+            onRestore={restoreHistory}
+            onRemove={removeHistoryEntry}
+          />
 
           {result ? (
             <div className="result-tools">
@@ -608,14 +639,25 @@ function LoadingState() {
   );
 }
 
-function HistoryPanel({ history, onRestore, onRemove }) {
+function HistoryPanel({ history, onClear, onRestore, onRemove }) {
   if (!history.length) return null;
 
   return (
     <section className="history-panel" aria-label="Recent interpretations">
-      <div className="history-heading">
-        <History size={17} />
-        <span>Recent</span>
+      <div className="history-top">
+        <div className="history-heading">
+          <History size={17} />
+          <span>Recent</span>
+        </div>
+        <button
+          type="button"
+          className="icon-button tiny"
+          aria-label="Clear recent interpretations"
+          title="Clear recent interpretations"
+          onClick={onClear}
+        >
+          <Trash2 size={15} />
+        </button>
       </div>
       <div className="history-list">
         {history.map((entry) => (
