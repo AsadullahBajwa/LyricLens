@@ -12,6 +12,7 @@ import {
   History,
   Loader2,
   Music2,
+  Printer,
   Save,
   Search,
   Sparkles,
@@ -248,6 +249,11 @@ function App() {
     link.download = filename;
     link.click();
     URL.revokeObjectURL(url);
+  }
+
+  function printResult() {
+    if (!result) return;
+    window.print();
   }
 
   function saveDraftNow() {
@@ -601,6 +607,16 @@ function App() {
                 disabled={!result}
               >
                 <FileText size={18} />
+              </button>
+              <button
+                type="button"
+                className="icon-button"
+                aria-label="Print interpretation"
+                title="Print interpretation"
+                onClick={printResult}
+                disabled={!result}
+              >
+                <Printer size={18} />
               </button>
             </div>
           </header>

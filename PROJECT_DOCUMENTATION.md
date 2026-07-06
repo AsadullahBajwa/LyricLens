@@ -49,6 +49,7 @@ The browser calls `/api/interpret`. Netlify rewrites that route to `/.netlify/fu
 - Search, jump controls, and collapsible sections for long interpretations.
 - Text file upload for `.txt`, `.md`, and `.text` files.
 - Copy plus `.txt` and `.md` download actions for the generated interpretation.
+- Print-friendly result view for paper or browser PDF output.
 - Responsive desktop and mobile layout.
 - Server-side API key handling through Netlify Functions.
 - JSON Schema structured output to keep frontend rendering predictable.
@@ -189,6 +190,7 @@ The frontend keeps the user workflow simple:
 - Section headers collapse or expand long explanations.
 - Copy exports all sections as plain text with result metadata.
 - Download saves `.txt` or `.md` files named from the saved song or artist fields when available.
+- Print opens the browser print flow with composer controls hidden.
 - Keyboard shortcuts: `Ctrl`/`Cmd` + `Enter` submits, and `Ctrl`/`Cmd` + `S` saves a draft.
 
 ## Troubleshooting
@@ -246,6 +248,7 @@ Also test at least one desktop and one mobile viewport for:
 - Errors render clearly.
 - Result sections are readable after a successful interpretation.
 - Search, collapse, jump, and export actions work on a completed result.
+- Print preview contains only the interpretation content and metadata.
 
 ## Repository Hygiene
 

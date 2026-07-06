@@ -865,3 +865,87 @@ mark {
     font-size: 1.45rem;
   }
 }
+
+@media print {
+  :root {
+    color: #111111;
+    background: #ffffff;
+  }
+
+  body {
+    min-width: 0;
+    background: #ffffff;
+  }
+
+  .shell {
+    min-height: auto;
+    padding: 0;
+  }
+
+  .app-grid {
+    display: block;
+    max-width: none;
+    min-height: auto;
+  }
+
+  .composer,
+  .history-panel,
+  .result-tools,
+  .results-toolbar .button-row,
+  .empty-state,
+  .loading-state,
+  .no-results {
+    display: none;
+  }
+
+  .results {
+    min-height: auto;
+    padding: 0;
+    border: 0;
+    box-shadow: none;
+  }
+
+  .results-toolbar {
+    display: block;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #aaaaaa;
+  }
+
+  .result-meta {
+    gap: 10px;
+    padding: 10px 0;
+  }
+
+  .result-meta span {
+    padding: 0;
+    border: 0;
+    color: #333333;
+    background: transparent;
+  }
+
+  .section-stack {
+    overflow: visible;
+    padding-top: 12px;
+  }
+
+  .result-section {
+    break-inside: avoid;
+    margin-bottom: 12px;
+    border: 1px solid #cccccc;
+    border-left: 4px solid #666666;
+    box-shadow: none;
+  }
+
+  .section-heading {
+    cursor: default;
+  }
+
+  .chevron {
+    display: none;
+  }
+
+  mark {
+    background: transparent;
+    text-decoration: underline;
+  }
+}
