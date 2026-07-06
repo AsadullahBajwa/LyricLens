@@ -89,6 +89,7 @@ function App() {
   const [error, setError] = useState("");
   const [status, setStatus] = useState("idle");
   const [copied, setCopied] = useState(false);
+  const [resultMeta, setResultMeta] = useState(null);
   const [history, setHistory] = useState(loadHistory);
   const [draftSavedAt, setDraftSavedAt] = useState(() => readStorage(STORAGE_KEYS.draft)?.savedAt || "");
   const [resultQuery, setResultQuery] = useState("");
@@ -99,10 +100,11 @@ function App() {
   const lyricUsagePercent = Math.min((lyricStats.characters / MAX_LYRICS_CHARS) * 100, 100);
   const isOverLimit = lyricStats.characters > MAX_LYRICS_CHARS;
   const canSubmit = form.lyrics.trim().length > 0 && !isOverLimit && status !== "loading";
-  const plainText = useMemo(() => (result ? resultToText(result) : ""), [result]);
+  const exportContext = resultMeta || form;
+  const plainText = useMemo(() => (result ? resultToText(result, resultMeta) : ""), [result, resultMeta]);
   const markdownText = useMemo(
-    () => (result ? resultToMarkdown(result, form) : ""),
-    [form.artist, form.title, result]
+    () => (result ? resultToMarkdown(result, exportContext) : ""),
+    [exportContext, result]
   );
 
   useEffect(() => {
@@ -204,11 +206,13 @@ function App() {
         throw new Error(data.error || "Interpretation failed.");
       }
 
+      const meta = createResultMeta(form);
       setResult(data.interpretation);
+      setResultMeta(meta);
       setStatus("complete");
       setResultQuery("");
       setCollapsedSections([]);
-      rememberInterpretation(form, data.interpretation);
+      rememberInterpretation(form, data.interpretation, meta);
     } catch (err) {
       setStatus("idle");
       setError(
@@ -234,7 +238,7 @@ function App() {
     const content = format === "md" ? markdownText : plainText;
     if (!content) return;
 
-    const filename = makeFilename(form, `interpretation.${format}`);
+    const filename = makeFilename(exportContext, `interpretation.${format}`);
     const blob = new Blob([content], {
       type: format === "md" ? "text/markdown" : "text/plain"
     });
@@ -270,6 +274,7 @@ function App() {
       focus: ["themes", "craft"]
     });
     setResult(null);
+    setResultMeta(null);
     setError("");
     setStatus("idle");
     setResultQuery("");
@@ -279,6 +284,7 @@ function App() {
   function clearAll() {
     setForm({ ...emptyForm, focus: [...emptyForm.focus] });
     setResult(null);
+    setResultMeta(null);
     setError("");
     setStatus("idle");
     setResultQuery("");
@@ -300,17 +306,12 @@ function App() {
     event.target.value = "";
   }
 
-  function rememberInterpretation(submittedForm, interpretation) {
+  function rememberInterpretation(submittedForm, interpretation, meta = createResultMeta(submittedForm)) {
     const entry = {
       id: `${Date.now()}`,
-      title: submittedForm.title.trim(),
-      artist: submittedForm.artist.trim(),
-      detail: submittedForm.detail,
-      tone: normalizeTone(submittedForm.tone),
-      focus: normalizeFocus(submittedForm.focus),
+      ...meta,
       lyrics: submittedForm.lyrics,
-      interpretation,
-      createdAt: new Date().toISOString()
+      interpretation
     };
     const fingerprint = getHistoryFingerprint(entry);
 
@@ -330,6 +331,7 @@ function App() {
       focus: normalizeFocus(entry.focus)
     });
     setResult(entry.interpretation);
+    setResultMeta(hydrateResultMeta(entry));
     setStatus("complete");
     setError("");
     setCopied(false);
@@ -635,6 +637,8 @@ function App() {
             </div>
           ) : null}
 
+          {result ? <ResultMeta meta={resultMeta} /> : null}
+
           {status === "loading" ? <LoadingState /> : null}
           {!result && status !== "loading" ? <EmptyState /> : null}
           {result && status !== "loading" ? (
@@ -705,7 +709,11 @@ function HistoryPanel({ history, onClear, onRestore, onRemove }) {
           <div className="history-item" key={entry.id}>
             <button type="button" className="history-main" onClick={() => onRestore(entry)}>
               <strong>{entry.title || "Untitled lyrics"}</strong>
-              <span>{[entry.artist, formatTime(entry.createdAt)].filter(Boolean).join(" / ")}</span>
+              <span>
+                {[entry.artist, capitalize(entry.detail || "plain"), getToneLabel(entry.tone), formatTime(entry.createdAt)]
+                  .filter(Boolean)
+                  .join(" / ")}
+              </span>
             </button>
             <button
               type="button"
@@ -720,6 +728,21 @@ function HistoryPanel({ history, onClear, onRestore, onRemove }) {
         ))}
       </div>
     </section>
+  );
+}
+
+function ResultMeta({ meta }) {
+  if (!meta) return null;
+
+  return (
+    <div className="result-meta" aria-label="Interpretation details">
+      <span>{meta.title || "Untitled lyrics"}</span>
+      <span>{meta.artist || "Unknown artist"}</span>
+      <span>{capitalize(meta.detail || "plain")}</span>
+      <span>{getToneLabel(meta.tone)}</span>
+      <span>{normalizeFocus(meta.focus).map(getFocusLabel).join(", ")}</span>
+      <span>{meta.stats?.words?.toLocaleString() || 0} words</span>
+    </div>
   );
 }
 
@@ -861,8 +884,18 @@ function HighlightedText({ text, query }) {
   );
 }
 
-function resultToText(result) {
-  return sectionConfig
+function resultToText(result, meta) {
+  const header = meta
+    ? [
+        `Song: ${meta.title || "Untitled lyrics"}`,
+        `Artist: ${meta.artist || "Unknown artist"}`,
+        `Depth: ${capitalize(meta.detail || "plain")}`,
+        `Voice: ${getToneLabel(meta.tone)}`,
+        `Lenses: ${normalizeFocus(meta.focus).map(getFocusLabel).join(", ")}`
+      ].join("\n")
+    : "";
+
+  const body = sectionConfig
     .map(([key, title]) => {
       const value = result[key];
       if (typeof value === "string") {
@@ -885,15 +918,24 @@ function resultToText(result) {
       return `${title}\n${lines.join("\n")}`;
     })
     .join("\n\n");
+
+  return [header, body].filter(Boolean).join("\n\n");
 }
 
-function resultToMarkdown(result, form) {
-  const song = [form.title || "Untitled lyrics", form.artist ? `by ${form.artist}` : ""]
+function resultToMarkdown(result, context) {
+  const song = [context.title || "Untitled lyrics", context.artist ? `by ${context.artist}` : ""]
     .filter(Boolean)
     .join(" ");
+  const details = [
+    `**Depth:** ${capitalize(context.detail || "plain")}`,
+    `**Voice:** ${getToneLabel(context.tone)}`,
+    `**Lenses:** ${normalizeFocus(context.focus).map(getFocusLabel).join(", ")}`
+  ];
 
   return [
     `# ${song}`,
+    "",
+    ...details,
     "",
     ...sectionConfig.flatMap(([key, title]) => {
       const value = result[key];
@@ -979,7 +1021,8 @@ function loadHistory() {
     .map((entry) => ({
       ...entry,
       tone: normalizeTone(entry.tone),
-      focus: normalizeFocus(entry.focus)
+      focus: normalizeFocus(entry.focus),
+      stats: entry.stats || getLyricStats(entry.lyrics || "")
     }))
     .slice(0, MAX_HISTORY_ITEMS);
 }
@@ -993,6 +1036,38 @@ function normalizeFocus(value) {
   const allowed = focusOptions.map(([option]) => option);
   const selected = Array.isArray(value) ? value.filter((item) => allowed.includes(item)) : [];
   return selected.length ? selected : [...emptyForm.focus];
+}
+
+function createResultMeta(source, createdAt = new Date().toISOString()) {
+  return {
+    title: source.title?.trim() || "",
+    artist: source.artist?.trim() || "",
+    detail: source.detail || "plain",
+    tone: normalizeTone(source.tone),
+    focus: normalizeFocus(source.focus),
+    stats: getLyricStats(source.lyrics || ""),
+    createdAt
+  };
+}
+
+function hydrateResultMeta(entry) {
+  return {
+    title: entry.title || "",
+    artist: entry.artist || "",
+    detail: entry.detail || "plain",
+    tone: normalizeTone(entry.tone),
+    focus: normalizeFocus(entry.focus),
+    stats: entry.stats || getLyricStats(entry.lyrics || ""),
+    createdAt: entry.createdAt || new Date().toISOString()
+  };
+}
+
+function getToneLabel(value) {
+  return toneOptions.find(([option]) => option === normalizeTone(value))?.[1] || "Neutral";
+}
+
+function getFocusLabel(value) {
+  return focusOptions.find(([option]) => option === value)?.[1] || capitalize(String(value));
 }
 
 function getHistoryFingerprint(entry) {
