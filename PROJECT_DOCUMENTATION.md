@@ -33,6 +33,86 @@ LyricLens has two main parts:
 
 The browser calls `/api/interpret`. Netlify rewrites that route to `/.netlify/functions/interpret`, where the serverless function validates input, calls the OpenAI Responses API, parses the structured JSON result, and returns it to the frontend.
 
+### Runtime Component Diagram
+
+```mermaid
+flowchart LR
+  user["User"]
+  browser["Browser"]
+  app["React App<br/>src/main.jsx"]
+  styles["Responsive UI Styles<br/>src/styles.css"]
+  storage["Browser localStorage<br/>Drafts and recent history"]
+  assets["Static Assets<br/>public/lyriclens-studio.png"]
+  netlify["Netlify Redirect<br/>/api/*"]
+  fn["Interpret Function<br/>netlify/functions/interpret.mjs"]
+  schema["Structured Output Schema<br/>Seven interpretation sections"]
+  openai["OpenAI Responses API"]
+
+  user --> browser
+  browser --> app
+  app --> styles
+  app --> assets
+  app <--> storage
+  app -->|"POST /api/interpret"| netlify
+  netlify -->|"rewrite to /.netlify/functions/interpret"| fn
+  fn --> schema
+  fn -->|"validated prompt and JSON schema"| openai
+  openai -->|"structured JSON text"| fn
+  fn -->|"interpretation JSON"| app
+```
+
+### Request Sequence Diagram
+
+```mermaid
+sequenceDiagram
+  actor User
+  participant UI as React UI
+  participant Store as localStorage
+  participant API as Netlify Function
+  participant OpenAI as OpenAI Responses API
+
+  User->>UI: Enter lyrics, depth, voice, and lenses
+  UI->>Store: Autosave draft after edits
+  User->>UI: Submit interpretation request
+  UI->>UI: Validate non-empty lyrics and character limit
+  UI->>API: POST /api/interpret
+  API->>API: Validate method, JSON, API key, and payload
+  API->>OpenAI: Send prompt with JSON schema
+  OpenAI-->>API: Return structured interpretation text
+  API->>API: Parse JSON and normalize errors
+  API-->>UI: Return interpretation object
+  UI->>Store: Save result metadata and recent history
+  UI-->>User: Render searchable, collapsible sections
+```
+
+### Client State And Export Flow
+
+```mermaid
+flowchart TD
+  form["Composer State<br/>Title, artist, lyrics, depth, voice, lenses"]
+  draft["Draft Autosave<br/>lyriclens:draft:v2"]
+  submit["Interpretation Submit"]
+  result["Result State<br/>Structured interpretation"]
+  meta["Result Metadata<br/>Settings and lyric stats snapshot"]
+  history["Recent History<br/>lyriclens:history:v1"]
+  copy["Copy Plain Text"]
+  download["Download TXT or Markdown"]
+  print["Print-Friendly View"]
+
+  form --> draft
+  form --> submit
+  submit --> result
+  submit --> meta
+  result --> history
+  meta --> history
+  result --> copy
+  meta --> copy
+  result --> download
+  meta --> download
+  result --> print
+  meta --> print
+```
+
 ## Key Features
 
 - Structured lyric interpretation with seven fixed sections.
