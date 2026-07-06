@@ -33,6 +33,7 @@ const emptyForm = {
   artist: "",
   lyrics: "",
   detail: "plain",
+  tone: "neutral",
   focus: ["themes", "context"]
 };
 
@@ -63,6 +64,13 @@ const focusOptions = [
   ["craft", "Craft"],
   ["context", "Context"],
   ["ambiguity", "Ambiguity"]
+];
+
+const toneOptions = [
+  ["neutral", "Neutral"],
+  ["literary", "Literary"],
+  ["direct", "Direct"],
+  ["classroom", "Classroom"]
 ];
 
 const sectionConfig = [
@@ -106,7 +114,12 @@ function App() {
       }
 
       const savedAt = new Date().toISOString();
-      saveStorage(STORAGE_KEYS.draft, { ...form, focus: normalizeFocus(form.focus), savedAt });
+      saveStorage(STORAGE_KEYS.draft, {
+        ...form,
+        tone: normalizeTone(form.tone),
+        focus: normalizeFocus(form.focus),
+        savedAt
+      });
       setDraftSavedAt(savedAt);
     }, 350);
 
@@ -177,7 +190,11 @@ function App() {
       const response = await fetch("/api/interpret", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...form, focus: normalizeFocus(form.focus) }),
+        body: JSON.stringify({
+          ...form,
+          tone: normalizeTone(form.tone),
+          focus: normalizeFocus(form.focus)
+        }),
         signal: controller.signal
       });
 
@@ -231,7 +248,12 @@ function App() {
 
   function saveDraftNow() {
     const savedAt = new Date().toISOString();
-    saveStorage(STORAGE_KEYS.draft, { ...form, focus: normalizeFocus(form.focus), savedAt });
+    saveStorage(STORAGE_KEYS.draft, {
+      ...form,
+      tone: normalizeTone(form.tone),
+      focus: normalizeFocus(form.focus),
+      savedAt
+    });
     setDraftSavedAt(savedAt);
   }
 
@@ -244,6 +266,7 @@ function App() {
       ...emptyForm,
       ...demoLyrics,
       detail: "plain",
+      tone: "literary",
       focus: ["themes", "craft"]
     });
     setResult(null);
@@ -283,6 +306,7 @@ function App() {
       title: submittedForm.title.trim(),
       artist: submittedForm.artist.trim(),
       detail: submittedForm.detail,
+      tone: normalizeTone(submittedForm.tone),
       focus: normalizeFocus(submittedForm.focus),
       lyrics: submittedForm.lyrics,
       interpretation,
@@ -302,6 +326,7 @@ function App() {
       artist: entry.artist || "",
       lyrics: entry.lyrics || "",
       detail: entry.detail || "plain",
+      tone: normalizeTone(entry.tone),
       focus: normalizeFocus(entry.focus)
     });
     setResult(entry.interpretation);
@@ -398,6 +423,22 @@ function App() {
                   onChange={(event) => updateField("detail", event.target.value)}
                 />
                 <span>{capitalize(option)}</span>
+              </label>
+            ))}
+          </fieldset>
+
+          <fieldset className="segmented tone-grid">
+            <legend>Voice</legend>
+            {toneOptions.map(([option, label]) => (
+              <label key={option} className={form.tone === option ? "active" : ""}>
+                <input
+                  type="radio"
+                  name="tone"
+                  value={option}
+                  checked={form.tone === option}
+                  onChange={(event) => updateField("tone", event.target.value)}
+                />
+                <span>{label}</span>
               </label>
             ))}
           </fieldset>
@@ -920,6 +961,7 @@ function createInitialForm() {
   return {
     ...emptyForm,
     ...draft,
+    tone: normalizeTone(draft.tone),
     focus: normalizeFocus(draft.focus)
   };
 }
@@ -934,8 +976,17 @@ function loadHistory() {
 
   return value
     .filter((entry) => entry?.id && entry?.interpretation)
-    .map((entry) => ({ ...entry, focus: normalizeFocus(entry.focus) }))
+    .map((entry) => ({
+      ...entry,
+      tone: normalizeTone(entry.tone),
+      focus: normalizeFocus(entry.focus)
+    }))
     .slice(0, MAX_HISTORY_ITEMS);
+}
+
+function normalizeTone(value) {
+  const allowed = toneOptions.map(([option]) => option);
+  return allowed.includes(value) ? value : emptyForm.tone;
 }
 
 function normalizeFocus(value) {

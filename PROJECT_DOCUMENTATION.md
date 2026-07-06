@@ -38,6 +38,7 @@ The browser calls `/api/interpret`. Netlify rewrites that route to `/.netlify/fu
 - Structured lyric interpretation with seven fixed sections.
 - Optional song title and artist fields for extra context.
 - Explanation depth selector with `Plain`, `Deep`, and `Cautious` modes.
+- Response voice selector with neutral, literary, direct, and classroom modes.
 - Interpretation lens selector for themes, craft, context, and ambiguity.
 - Built-in original demo lyric for quick app testing.
 - Lyric formatting cleanup plus word, line, and character stats.
@@ -127,9 +128,9 @@ The `netlify.toml` file already contains the build and function configuration, s
    - JSON body
    - required `lyrics`
    - maximum lyric length
-   - selected interpretation lenses
+   - selected response voice and interpretation lenses
    - presence of `OPENAI_API_KEY`
-5. The function sends the prompt, depth, and selected lenses to OpenAI with a JSON Schema response format.
+5. The function sends the prompt, depth, response voice, and selected lenses to OpenAI with a JSON Schema response format.
 6. The function parses the model output and returns:
 
 ```json
@@ -155,6 +156,7 @@ The server prompt tells the assistant to:
 - Avoid inventing facts.
 - Mark uncertain references as uncertain.
 - Explain slang, cultural references, double meanings, artist context, tone, and likely intent.
+- Follow the selected response voice while keeping claims grounded.
 - Prioritize the selected interpretation lenses while still filling all sections.
 - Use short hints rather than long lyric quotations when discussing specific lines.
 
@@ -170,6 +172,7 @@ The frontend keeps the user workflow simple:
 
 - Empty lyrics disable the submit button.
 - Demo lyrics can populate the composer without uploading a file.
+- The response voice selector changes the explanation style sent to the API.
 - Lyric stats update as the user types.
 - A character-limit meter mirrors the server-side 24,000-character maximum and disables submission when exceeded.
 - The cleanup action normalizes line endings, trims trailing whitespace, and collapses excessive blank lines.

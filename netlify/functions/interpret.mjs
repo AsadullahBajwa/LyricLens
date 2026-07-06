@@ -3,12 +3,20 @@ const DEFAULT_MODEL = "gpt-5.5";
 const MAX_LYRICS_CHARS = 24000;
 const OPENAI_TIMEOUT_MS = clampNumber(Number(process.env.OPENAI_TIMEOUT_MS), 5000, 120000, 45000);
 const ALLOWED_FOCUS = ["themes", "craft", "context", "ambiguity"];
+const ALLOWED_TONES = ["neutral", "literary", "direct", "classroom"];
 
 const focusGuidance = {
   themes: "emotional themes, story, and speaker motivation",
   craft: "imagery, structure, rhyme, metaphor, and other writing choices",
   context: "genre, cultural context, references, and artist context when supported",
   ambiguity: "uncertainty, alternate readings, and places where evidence is limited"
+};
+
+const toneGuidance = {
+  neutral: "clear, balanced, plain-English explanation",
+  literary: "more attention to imagery, symbolism, and craft without overclaiming",
+  direct: "concise, practical explanation with minimal flourish",
+  classroom: "teacherly explanation that defines concepts and keeps reasoning explicit"
 };
 
 const headers = {
@@ -142,6 +150,7 @@ export async function handler(event) {
   const detail = ["plain", "deep", "cautious"].includes(payload.detail)
     ? payload.detail
     : "plain";
+  const tone = normalizeTone(payload.tone);
   const focus = normalizeFocus(payload.focus);
 
   if (!lyrics) {
@@ -158,6 +167,7 @@ export async function handler(event) {
     title ? `Song title: ${title}` : "Song title: not provided",
     artist ? `Artist: ${artist}` : "Artist: not provided",
     `Explanation depth: ${detail}`,
+    `Response voice: ${toneGuidance[tone]}`,
     `Interpretation lenses: ${focus.map((item) => focusGuidance[item]).join("; ")}`,
     "",
     "Lyrics:",
@@ -257,6 +267,10 @@ function normalizeFocus(value) {
     : [];
 
   return selected.length ? selected : ["themes", "context"];
+}
+
+function normalizeTone(value) {
+  return ALLOWED_TONES.includes(value) ? value : "neutral";
 }
 
 function clampNumber(value, min, max, fallback) {
