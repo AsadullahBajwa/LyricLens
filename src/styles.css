@@ -602,6 +602,22 @@ button:disabled {
   gap: 6px;
 }
 
+.result-nav,
+.section-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.result-nav {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.section-actions {
+  padding-right: 2px;
+}
+
 .section-jump button {
   display: grid;
   place-items: center;
@@ -854,6 +870,10 @@ mark {
   }
 
   .section-jump {
+    justify-content: flex-start;
+  }
+
+  .result-nav {
     justify-content: flex-start;
   }
 

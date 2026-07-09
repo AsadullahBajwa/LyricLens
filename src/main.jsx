@@ -12,6 +12,8 @@ import {
   FileUp,
   History,
   Loader2,
+  Maximize2,
+  Minimize2,
   Music2,
   Printer,
   Save,
@@ -371,6 +373,14 @@ function App() {
     );
   }
 
+  function expandAllSections() {
+    setCollapsedSections([]);
+  }
+
+  function collapseAllSections() {
+    setCollapsedSections(sectionConfig.map(([key]) => key));
+  }
+
   function jumpToSection(sectionKey) {
     document.getElementById(`result-${sectionKey}`)?.scrollIntoView({
       behavior: "smooth",
@@ -658,17 +668,39 @@ function App() {
                   placeholder="Search sections"
                 />
               </label>
-              <div className="section-jump" aria-label="Result sections">
-                {sectionConfig.map(([key], index) => (
+              <div className="result-nav">
+                <div className="section-actions">
                   <button
-                    key={key}
                     type="button"
-                    aria-label={`Jump to section ${index + 1}`}
-                    onClick={() => jumpToSection(key)}
+                    className="icon-button tiny"
+                    aria-label="Expand all sections"
+                    title="Expand all sections"
+                    onClick={expandAllSections}
                   >
-                    {index + 1}
+                    <Maximize2 size={15} />
                   </button>
-                ))}
+                  <button
+                    type="button"
+                    className="icon-button tiny"
+                    aria-label="Collapse all sections"
+                    title="Collapse all sections"
+                    onClick={collapseAllSections}
+                  >
+                    <Minimize2 size={15} />
+                  </button>
+                </div>
+                <div className="section-jump" aria-label="Result sections">
+                  {sectionConfig.map(([key], index) => (
+                    <button
+                      key={key}
+                      type="button"
+                      aria-label={`Jump to section ${index + 1}`}
+                      onClick={() => jumpToSection(key)}
+                    >
+                      {index + 1}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
           ) : null}
