@@ -448,6 +448,15 @@ textarea:focus {
   flex: 0 0 34px;
 }
 
+.favorite-button.active {
+  color: #8a6500;
+  background: #fff4cf;
+}
+
+.favorite-button.active svg {
+  fill: currentColor;
+}
+
 .primary-button {
   gap: 8px;
   padding: 0 18px;

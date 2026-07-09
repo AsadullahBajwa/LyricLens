@@ -124,6 +124,7 @@ flowchart TD
 - Lyric formatting cleanup plus word, line, and character stats.
 - Autosaved local drafts.
 - Recent interpretation history with one-click restore and removal.
+- Pinned history entries that stay above regular recents and survive clearing unpinned history.
 - Result metadata snapshots for title, artist, depth, voice, lenses, and lyric stats.
 - Clear-all recent history action.
 - Search, jump controls, collapsible sections, and expand/collapse-all actions for long interpretations.
@@ -264,7 +265,7 @@ The frontend keeps the user workflow simple:
 - Successful results render as separate sections.
 - Completed results show the saved interpretation settings used for that run.
 - Recent results are saved locally and can be restored from the output panel.
-- Recent history can be cleared from the output panel.
+- Recent history can be pinned, removed, or cleared from the output panel.
 - Result search filters sections and highlights the first match in each field.
 - Section number buttons jump to the matching output section.
 - Section headers collapse or expand long explanations, with bulk expand and collapse controls.

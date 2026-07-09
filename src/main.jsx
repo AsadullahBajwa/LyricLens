@@ -19,6 +19,7 @@ import {
   Save,
   Search,
   Sparkles,
+  Star,
   Trash2,
   Wand2
 } from "lucide-react";
@@ -333,10 +334,14 @@ function App() {
     };
     const fingerprint = getHistoryFingerprint(entry);
 
-    setHistory((current) => [
-      entry,
-      ...current.filter((item) => getHistoryFingerprint(item) !== fingerprint)
-    ].slice(0, MAX_HISTORY_ITEMS));
+    setHistory((current) => {
+      const existing = current.find((item) => getHistoryFingerprint(item) === fingerprint);
+      const nextEntry = { ...entry, favorite: Boolean(existing?.favorite) };
+      return sortHistory([
+        nextEntry,
+        ...current.filter((item) => getHistoryFingerprint(item) !== fingerprint)
+      ]);
+    });
   }
 
   function restoreHistory(entry) {
@@ -361,8 +366,18 @@ function App() {
     setHistory((current) => current.filter((entry) => entry.id !== id));
   }
 
+  function toggleFavoriteHistory(id) {
+    setHistory((current) =>
+      sortHistory(
+        current.map((entry) =>
+          entry.id === id ? { ...entry, favorite: !entry.favorite } : entry
+        )
+      )
+    );
+  }
+
   function clearHistory() {
-    setHistory([]);
+    setHistory((current) => current.filter((entry) => entry.favorite));
   }
 
   function toggleSection(sectionKey) {
@@ -654,6 +669,7 @@ function App() {
           <HistoryPanel
             history={history}
             onClear={clearHistory}
+            onToggleFavorite={toggleFavoriteHistory}
             onRestore={restoreHistory}
             onRemove={removeHistoryEntry}
           />
@@ -752,7 +768,7 @@ function LoadingState() {
   );
 }
 
-function HistoryPanel({ history, onClear, onRestore, onRemove }) {
+function HistoryPanel({ history, onClear, onToggleFavorite, onRestore, onRemove }) {
   if (!history.length) return null;
 
   return (
@@ -765,8 +781,8 @@ function HistoryPanel({ history, onClear, onRestore, onRemove }) {
         <button
           type="button"
           className="icon-button tiny"
-          aria-label="Clear recent interpretations"
-          title="Clear recent interpretations"
+          aria-label="Clear unpinned recent interpretations"
+          title="Clear unpinned recent interpretations"
           onClick={onClear}
         >
           <Trash2 size={15} />
@@ -782,6 +798,15 @@ function HistoryPanel({ history, onClear, onRestore, onRemove }) {
                   .filter(Boolean)
                   .join(" / ")}
               </span>
+            </button>
+            <button
+              type="button"
+              className={entry.favorite ? "icon-button tiny favorite-button active" : "icon-button tiny favorite-button"}
+              aria-label={`${entry.favorite ? "Unpin" : "Pin"} ${entry.title || "recent interpretation"}`}
+              title={entry.favorite ? "Unpin" : "Pin"}
+              onClick={() => onToggleFavorite(entry.id)}
+            >
+              <Star size={15} />
             </button>
             <button
               type="button"
@@ -1109,8 +1134,10 @@ function loadHistory() {
       ...entry,
       tone: normalizeTone(entry.tone),
       focus: normalizeFocus(entry.focus),
+      favorite: Boolean(entry.favorite),
       stats: entry.stats || getLyricStats(entry.lyrics || "")
     }))
+    .sort(compareHistoryEntries)
     .slice(0, MAX_HISTORY_ITEMS);
 }
 
@@ -1159,6 +1186,18 @@ function getFocusLabel(value) {
 
 function getHistoryFingerprint(entry) {
   return [entry.title, entry.artist, entry.lyrics].join("\n").toLowerCase();
+}
+
+function sortHistory(entries) {
+  return [...entries].sort(compareHistoryEntries).slice(0, MAX_HISTORY_ITEMS);
+}
+
+function compareHistoryEntries(left, right) {
+  if (Boolean(left.favorite) !== Boolean(right.favorite)) {
+    return left.favorite ? -1 : 1;
+  }
+
+  return new Date(right.createdAt || 0).getTime() - new Date(left.createdAt || 0).getTime();
 }
 
 function makeFilename(form, suffix) {
