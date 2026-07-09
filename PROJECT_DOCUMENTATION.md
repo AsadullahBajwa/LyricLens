@@ -128,7 +128,7 @@ flowchart TD
 - Clear-all recent history action.
 - Search, jump controls, and collapsible sections for long interpretations.
 - Text file upload for `.txt`, `.md`, and `.text` files.
-- Copy plus `.txt` and `.md` download actions for the generated interpretation.
+- Copy plus `.txt`, `.md`, and structured `.json` download actions for the generated interpretation.
 - Print-friendly result view for paper or browser PDF output.
 - Responsive desktop and mobile layout.
 - Server-side API key handling through Netlify Functions.
@@ -269,7 +269,7 @@ The frontend keeps the user workflow simple:
 - Section number buttons jump to the matching output section.
 - Section headers collapse or expand long explanations.
 - Copy exports all sections as plain text with result metadata.
-- Download saves `.txt` or `.md` files named from the saved song or artist fields when available.
+- Download saves `.txt`, `.md`, or `.json` files named from the saved song or artist fields when available.
 - Print opens the browser print flow with composer controls hidden.
 - Keyboard shortcuts: `Ctrl`/`Cmd` + `Enter` submits, and `Ctrl`/`Cmd` + `S` saves a draft.
 

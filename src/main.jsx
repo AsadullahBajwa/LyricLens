@@ -7,6 +7,7 @@ import {
   Clipboard,
   Download,
   Eraser,
+  FileJson,
   FileText,
   FileUp,
   History,
@@ -105,6 +106,10 @@ function App() {
   const plainText = useMemo(() => (result ? resultToText(result, resultMeta) : ""), [result, resultMeta]);
   const markdownText = useMemo(
     () => (result ? resultToMarkdown(result, exportContext) : ""),
+    [exportContext, result]
+  );
+  const jsonText = useMemo(
+    () => (result ? resultToJson(result, exportContext) : ""),
     [exportContext, result]
   );
 
@@ -236,12 +241,17 @@ function App() {
   }
 
   function downloadResult(format = "txt") {
-    const content = format === "md" ? markdownText : plainText;
+    const content = format === "json" ? jsonText : format === "md" ? markdownText : plainText;
     if (!content) return;
 
     const filename = makeFilename(exportContext, `interpretation.${format}`);
     const blob = new Blob([content], {
-      type: format === "md" ? "text/markdown" : "text/plain"
+      type:
+        format === "json"
+          ? "application/json"
+          : format === "md"
+            ? "text/markdown"
+            : "text/plain"
     });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
@@ -607,6 +617,16 @@ function App() {
                 disabled={!result}
               >
                 <FileText size={18} />
+              </button>
+              <button
+                type="button"
+                className="icon-button"
+                aria-label="Download JSON interpretation"
+                title="Download JSON interpretation"
+                onClick={() => downloadResult("json")}
+                disabled={!result}
+              >
+                <FileJson size={18} />
               </button>
               <button
                 type="button"
@@ -977,6 +997,25 @@ function resultToMarkdown(result, context) {
       return [heading, "", ...lines, ""];
     })
   ].join("\n");
+}
+
+function resultToJson(result, context) {
+  return JSON.stringify(
+    {
+      metadata: {
+        title: context.title || "",
+        artist: context.artist || "",
+        detail: context.detail || "plain",
+        tone: normalizeTone(context.tone),
+        focus: normalizeFocus(context.focus),
+        stats: context.stats || null,
+        createdAt: context.createdAt || null
+      },
+      interpretation: result
+    },
+    null,
+    2
+  );
 }
 
 function getLyricStats(lyrics) {
