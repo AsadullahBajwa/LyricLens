@@ -100,6 +100,7 @@ function App() {
   const [copied, setCopied] = useState(false);
   const [resultMeta, setResultMeta] = useState(null);
   const [history, setHistory] = useState(loadHistory);
+  const [historyQuery, setHistoryQuery] = useState("");
   const [draftSavedAt, setDraftSavedAt] = useState(() => readStorage(STORAGE_KEYS.draft)?.savedAt || "");
   const [resultQuery, setResultQuery] = useState("");
   const [collapsedSections, setCollapsedSections] = useState([]);
@@ -707,7 +708,9 @@ function App() {
 
           <HistoryPanel
             history={history}
+            historyQuery={historyQuery}
             onClear={clearHistory}
+            onHistoryQueryChange={setHistoryQuery}
             onToggleFavorite={toggleFavoriteHistory}
             onRestore={restoreHistory}
             onRemove={removeHistoryEntry}
@@ -807,8 +810,18 @@ function LoadingState() {
   );
 }
 
-function HistoryPanel({ history, onClear, onToggleFavorite, onRestore, onRemove }) {
+function HistoryPanel({
+  history,
+  historyQuery,
+  onClear,
+  onHistoryQueryChange,
+  onToggleFavorite,
+  onRestore,
+  onRemove
+}) {
   if (!history.length) return null;
+
+  const visibleHistory = history.filter((entry) => historyMatches(entry, historyQuery));
 
   return (
     <section className="history-panel" aria-label="Recent interpretations">
@@ -827,8 +840,16 @@ function HistoryPanel({ history, onClear, onToggleFavorite, onRestore, onRemove 
           <Trash2 size={15} />
         </button>
       </div>
+      <label className="history-search">
+        <Search size={16} />
+        <input
+          value={historyQuery}
+          onChange={(event) => onHistoryQueryChange(event.target.value)}
+          placeholder="Search history"
+        />
+      </label>
       <div className="history-list">
-        {history.map((entry) => (
+        {visibleHistory.map((entry) => (
           <div className="history-item" key={entry.id}>
             <button type="button" className="history-main" onClick={() => onRestore(entry)}>
               <strong>{entry.title || "Untitled lyrics"}</strong>
@@ -859,6 +880,7 @@ function HistoryPanel({ history, onClear, onToggleFavorite, onRestore, onRemove 
           </div>
         ))}
       </div>
+      {!visibleHistory.length ? <p className="history-empty">No matching history.</p> : null}
     </section>
   );
 }
@@ -1141,6 +1163,23 @@ function sectionMatches(title, value, query) {
   const needle = query.trim().toLowerCase();
   if (!needle) return true;
   return `${title} ${valueToSearch(value)}`.toLowerCase().includes(needle);
+}
+
+function historyMatches(entry, query) {
+  const needle = query.trim().toLowerCase();
+  if (!needle) return true;
+
+  return [
+    entry.title,
+    entry.artist,
+    entry.notes,
+    entry.detail,
+    getToneLabel(entry.tone),
+    normalizeFocus(entry.focus).map(getFocusLabel).join(" ")
+  ]
+    .join(" ")
+    .toLowerCase()
+    .includes(needle);
 }
 
 function valueToSearch(value) {
