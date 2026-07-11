@@ -1,6 +1,7 @@
 const OPENAI_RESPONSES_URL = "https://api.openai.com/v1/responses";
 const DEFAULT_MODEL = "gpt-5.5";
 const MAX_LYRICS_CHARS = 24000;
+const MAX_NOTES_CHARS = 2000;
 const OPENAI_TIMEOUT_MS = clampNumber(Number(process.env.OPENAI_TIMEOUT_MS), 5000, 120000, 45000);
 const ALLOWED_FOCUS = ["themes", "craft", "context", "ambiguity"];
 const ALLOWED_TONES = ["neutral", "literary", "direct", "classroom"];
@@ -147,6 +148,7 @@ export async function handler(event) {
   const lyrics = String(payload.lyrics || "").trim();
   const title = String(payload.title || "").trim();
   const artist = String(payload.artist || "").trim();
+  const notes = String(payload.notes || "").trim();
   const detail = ["plain", "deep", "cautious"].includes(payload.detail)
     ? payload.detail
     : "plain";
@@ -163,9 +165,16 @@ export async function handler(event) {
     });
   }
 
+  if (notes.length > MAX_NOTES_CHARS) {
+    return json(413, {
+      error: `Context notes are too long. Please keep notes under ${MAX_NOTES_CHARS.toLocaleString()} characters.`
+    });
+  }
+
   const userPrompt = [
     title ? `Song title: ${title}` : "Song title: not provided",
     artist ? `Artist: ${artist}` : "Artist: not provided",
+    notes ? `User-provided context notes: ${notes}` : "User-provided context notes: not provided",
     `Explanation depth: ${detail}`,
     `Response voice: ${toneGuidance[tone]}`,
     `Interpretation lenses: ${focus.map((item) => focusGuidance[item]).join("; ")}`,

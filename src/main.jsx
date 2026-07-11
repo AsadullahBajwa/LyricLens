@@ -36,6 +36,7 @@ const MAX_LYRICS_CHARS = 24000;
 const emptyForm = {
   title: "",
   artist: "",
+  notes: "",
   lyrics: "",
   detail: "plain",
   tone: "neutral",
@@ -348,6 +349,7 @@ function App() {
     setForm({
       title: entry.title || "",
       artist: entry.artist || "",
+      notes: entry.notes || "",
       lyrics: entry.lyrics || "",
       detail: entry.detail || "plain",
       tone: normalizeTone(entry.tone),
@@ -453,6 +455,16 @@ function App() {
               />
             </label>
           </div>
+
+          <label className="context-box">
+            <span>Context Notes</span>
+            <textarea
+              value={form.notes}
+              onChange={(event) => updateField("notes", event.target.value)}
+              placeholder="Optional album, genre, release, or personal context"
+              spellCheck="true"
+            />
+          </label>
 
           <fieldset className="segmented">
             <legend>Depth</legend>
@@ -982,10 +994,11 @@ function resultToText(result, meta) {
     ? [
         `Song: ${meta.title || "Untitled lyrics"}`,
         `Artist: ${meta.artist || "Unknown artist"}`,
+        meta.notes ? `Context notes: ${meta.notes}` : "",
         `Depth: ${capitalize(meta.detail || "plain")}`,
         `Voice: ${getToneLabel(meta.tone)}`,
         `Lenses: ${normalizeFocus(meta.focus).map(getFocusLabel).join(", ")}`
-      ].join("\n")
+      ].filter(Boolean).join("\n")
     : "";
 
   const body = sectionConfig
@@ -1022,8 +1035,9 @@ function resultToMarkdown(result, context) {
   const details = [
     `**Depth:** ${capitalize(context.detail || "plain")}`,
     `**Voice:** ${getToneLabel(context.tone)}`,
-    `**Lenses:** ${normalizeFocus(context.focus).map(getFocusLabel).join(", ")}`
-  ];
+    `**Lenses:** ${normalizeFocus(context.focus).map(getFocusLabel).join(", ")}`,
+    context.notes ? `**Context Notes:** ${context.notes}` : ""
+  ].filter(Boolean);
 
   return [
     `# ${song}`,
@@ -1062,6 +1076,7 @@ function resultToJson(result, context) {
       metadata: {
         title: context.title || "",
         artist: context.artist || "",
+        notes: context.notes || "",
         detail: context.detail || "plain",
         tone: normalizeTone(context.tone),
         focus: normalizeFocus(context.focus),
@@ -1121,7 +1136,12 @@ function createInitialForm() {
 }
 
 function hasDraftContent(value) {
-  return Boolean(value.title?.trim() || value.artist?.trim() || value.lyrics?.trim());
+  return Boolean(
+    value.title?.trim() ||
+      value.artist?.trim() ||
+      value.notes?.trim() ||
+      value.lyrics?.trim()
+  );
 }
 
 function loadHistory() {
@@ -1156,6 +1176,7 @@ function createResultMeta(source, createdAt = new Date().toISOString()) {
   return {
     title: source.title?.trim() || "",
     artist: source.artist?.trim() || "",
+    notes: source.notes?.trim() || "",
     detail: source.detail || "plain",
     tone: normalizeTone(source.tone),
     focus: normalizeFocus(source.focus),
@@ -1168,6 +1189,7 @@ function hydrateResultMeta(entry) {
   return {
     title: entry.title || "",
     artist: entry.artist || "",
+    notes: entry.notes || "",
     detail: entry.detail || "plain",
     tone: normalizeTone(entry.tone),
     focus: normalizeFocus(entry.focus),

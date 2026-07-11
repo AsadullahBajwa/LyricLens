@@ -116,7 +116,7 @@ flowchart TD
 ## Key Features
 
 - Structured lyric interpretation with seven fixed sections.
-- Optional song title and artist fields for extra context.
+- Optional song title, artist, and context notes fields for extra context.
 - Explanation depth selector with `Plain`, `Deep`, and `Cautious` modes.
 - Response voice selector with neutral, literary, direct, and classroom modes.
 - Interpretation lens selector for themes, craft, context, and ambiguity.
@@ -212,8 +212,9 @@ The `netlify.toml` file already contains the build and function configuration, s
    - required `lyrics`
    - maximum lyric length
    - selected response voice and interpretation lenses
+   - bounded context notes
    - presence of `OPENAI_API_KEY`
-5. The function sends the prompt, depth, response voice, and selected lenses to OpenAI with a JSON Schema response format.
+5. The function sends the prompt, context notes, depth, response voice, and selected lenses to OpenAI with a JSON Schema response format.
 6. The function parses the model output and returns:
 
 ```json
@@ -255,6 +256,7 @@ The frontend keeps the user workflow simple:
 
 - Empty lyrics disable the submit button.
 - Demo lyrics can populate the composer without uploading a file.
+- Context notes can add album, genre, release, or personal context without mixing that text into the lyrics box.
 - The response voice selector changes the explanation style sent to the API.
 - Lyric stats update as the user types.
 - A character-limit meter mirrors the server-side 24,000-character maximum and disables submission when exceeded.

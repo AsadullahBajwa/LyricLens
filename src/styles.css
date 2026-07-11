@@ -230,7 +230,8 @@ h3 {
 }
 
 .song-fields label,
-.lyrics-box {
+.lyrics-box,
+.context-box {
   display: grid;
   gap: 7px;
   width: 100%;
@@ -266,6 +267,10 @@ textarea {
   min-height: 310px;
   resize: vertical;
   padding: 14px;
+}
+
+.context-box textarea {
+  min-height: 92px;
 }
 
 input:focus,
