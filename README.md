@@ -2,7 +2,7 @@
 
 LyricLens is a Netlify-ready web app that explains user-provided lyrics in plain English. It returns the exact sections requested: overall meaning, background context, verse-by-verse explanation, slang, references, ambiguous lines, and final takeaway.
 
-The workspace now includes a built-in demo lyric, optional context notes, lyric cleanup, word and line stats, autosaved drafts, pinned recent interpretation history, selectable interpretation lenses, searchable result sections, collapsible output, and `.txt`, `.md`, or `.json` exports.
+The workspace now includes a built-in demo lyric, optional context notes, section-template helpers, lyric cleanup, word and line stats, autosaved drafts, pinned recent interpretation history, selectable interpretation lenses, searchable result sections, collapsible output, and `.txt`, `.md`, or `.json` exports.
 
 For the full architecture, deployment, API flow, and troubleshooting notes, see [PROJECT_DOCUMENTATION.md](PROJECT_DOCUMENTATION.md).
 

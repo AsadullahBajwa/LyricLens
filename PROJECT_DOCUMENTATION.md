@@ -121,6 +121,7 @@ flowchart TD
 - Response voice selector with neutral, literary, direct, and classroom modes.
 - Interpretation lens selector for themes, craft, context, and ambiguity.
 - Built-in original demo lyric for quick app testing.
+- Quick section-template insert buttons for verse, chorus, and bridge headers.
 - Lyric formatting cleanup plus word, line, and character stats.
 - Autosaved local drafts.
 - Recent interpretation history with one-click restore and removal.
@@ -257,6 +258,7 @@ The frontend keeps the user workflow simple:
 - Empty lyrics disable the submit button.
 - Demo lyrics can populate the composer without uploading a file.
 - Context notes can add album, genre, release, or personal context without mixing that text into the lyrics box.
+- Section-template buttons insert common lyric headers into the lyrics box.
 - The response voice selector changes the explanation style sent to the API.
 - Lyric stats update as the user types.
 - A character-limit meter mirrors the server-side 24,000-character maximum and disables submission when exceeded.

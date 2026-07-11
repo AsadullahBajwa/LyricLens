@@ -240,8 +240,38 @@ h3 {
 }
 
 label span,
+.lyrics-label-row label,
 legend {
   font-size: 0.82rem;
+}
+
+.lyrics-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.template-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.template-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 30px;
+  padding: 0 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--teal);
+  background: #f6f8f6;
+  cursor: pointer;
+  font-size: 0.78rem;
+  font-weight: 900;
 }
 
 input,
@@ -864,6 +894,15 @@ mark {
 
   .button-row {
     justify-content: flex-end;
+  }
+
+  .lyrics-label-row {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .template-row {
+    justify-content: flex-start;
   }
 
   .segmented {

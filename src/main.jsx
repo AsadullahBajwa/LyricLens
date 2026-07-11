@@ -15,6 +15,7 @@ import {
   Maximize2,
   Minimize2,
   Music2,
+  Plus,
   Printer,
   Save,
   Search,
@@ -78,6 +79,8 @@ const toneOptions = [
   ["direct", "Direct"],
   ["classroom", "Classroom"]
 ];
+
+const sectionTemplates = ["Verse", "Chorus", "Bridge"];
 
 const sectionConfig = [
   ["overallMeaning", "1. Overall Meaning"],
@@ -283,6 +286,14 @@ function App() {
 
   function cleanLyrics() {
     updateField("lyrics", normalizeLyrics(form.lyrics));
+  }
+
+  function insertSectionTemplate(template) {
+    setForm((current) => {
+      const lyrics = current.lyrics.trimEnd();
+      const separator = lyrics ? "\n\n" : "";
+      return { ...current, lyrics: `${lyrics}${separator}[${template}]\n` };
+    });
   }
 
   function loadDemoLyrics() {
@@ -516,15 +527,31 @@ function App() {
             })}
           </fieldset>
 
-          <label className="lyrics-box">
-            <span>Lyrics</span>
+          <div className="lyrics-box">
+            <div className="lyrics-label-row">
+              <label htmlFor="lyrics-input">Lyrics</label>
+              <div className="template-row" aria-label="Lyric section templates">
+                {sectionTemplates.map((template) => (
+                  <button
+                    key={template}
+                    type="button"
+                    className="template-button"
+                    onClick={() => insertSectionTemplate(template)}
+                  >
+                    <Plus size={14} />
+                    <span>{template}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
             <textarea
+              id="lyrics-input"
               value={form.lyrics}
               onChange={(event) => updateField("lyrics", event.target.value)}
               placeholder="[Verse 1]"
               spellCheck="true"
             />
-          </label>
+          </div>
 
           <div
             className={isOverLimit ? "limit-meter danger" : "limit-meter"}
