@@ -443,6 +443,8 @@ function App() {
           <div className="workspace-strip" aria-label="Lyric stats">
             <Metric label="Words" value={lyricStats.words.toLocaleString()} />
             <Metric label="Lines" value={lyricStats.lines.toLocaleString()} />
+            <Metric label="Sections" value={lyricStats.sections.toLocaleString()} />
+            <Metric label="Read" value={lyricStats.readingMinutes ? `${lyricStats.readingMinutes} min` : "0 min"} />
             <Metric
               label="Draft"
               value={draftSavedAt ? formatTime(draftSavedAt) : "Unsaved"}
@@ -896,6 +898,7 @@ function ResultMeta({ meta }) {
       <span>{getToneLabel(meta.tone)}</span>
       <span>{normalizeFocus(meta.focus).map(getFocusLabel).join(", ")}</span>
       <span>{meta.stats?.words?.toLocaleString() || 0} words</span>
+      <span>{meta.stats?.sections?.toLocaleString() || 0} sections</span>
     </div>
   );
 }
@@ -1141,10 +1144,21 @@ function resultToJson(result, context) {
 
 function getLyricStats(lyrics) {
   const trimmed = lyrics.trim();
+  const words = trimmed ? trimmed.split(/\s+/) : [];
+  const uniqueWords = new Set(
+    words
+      .map((word) => word.toLowerCase().replace(/^[^a-z0-9]+|[^a-z0-9]+$/g, ""))
+      .filter(Boolean)
+  );
+  const lines = trimmed ? lyrics.split(/\r\n|\r|\n/).filter((line) => line.trim()) : [];
+
   return {
     characters: lyrics.length,
-    words: trimmed ? trimmed.split(/\s+/).length : 0,
-    lines: trimmed ? lyrics.split(/\r\n|\r|\n/).filter((line) => line.trim()).length : 0
+    words: words.length,
+    uniqueWords: uniqueWords.size,
+    lines: lines.length,
+    sections: lines.filter((line) => /^\[[^\]]+\]$/.test(line.trim())).length,
+    readingMinutes: words.length ? Math.max(1, Math.ceil(words.length / 180)) : 0
   };
 }
 
