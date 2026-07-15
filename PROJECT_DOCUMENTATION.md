@@ -117,6 +117,7 @@ flowchart TD
 
 - Structured lyric interpretation with seven fixed sections.
 - Optional song title, artist, and context notes fields for extra context.
+- Analysis presets for balanced, close-read, classroom, and cautious interpretation modes.
 - Explanation depth selector with `Plain`, `Deep`, and `Cautious` modes.
 - Response voice selector with neutral, literary, direct, and classroom modes.
 - Interpretation lens selector for themes, craft, context, and ambiguity.
@@ -259,6 +260,7 @@ The frontend keeps the user workflow simple:
 - Empty lyrics disable the submit button.
 - Demo lyrics can populate the composer without uploading a file.
 - Context notes can add album, genre, release, or personal context without mixing that text into the lyrics box.
+- Analysis presets update depth, response voice, and interpretation lenses together.
 - Section-template buttons insert common lyric headers into the lyrics box.
 - The response voice selector changes the explanation style sent to the API.
 - Lyric stats update as the user types, including detected bracketed sections and estimated read time.

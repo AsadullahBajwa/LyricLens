@@ -80,6 +80,37 @@ const toneOptions = [
   ["classroom", "Classroom"]
 ];
 
+const analysisPresets = [
+  {
+    id: "balanced",
+    label: "Balanced",
+    detail: "plain",
+    tone: "neutral",
+    focus: ["themes", "context"]
+  },
+  {
+    id: "close-read",
+    label: "Close Read",
+    detail: "deep",
+    tone: "literary",
+    focus: ["themes", "craft", "ambiguity"]
+  },
+  {
+    id: "classroom",
+    label: "Classroom",
+    detail: "plain",
+    tone: "classroom",
+    focus: ["themes", "context", "craft"]
+  },
+  {
+    id: "cautious",
+    label: "Cautious",
+    detail: "cautious",
+    tone: "direct",
+    focus: ["context", "ambiguity"]
+  }
+];
+
 const sectionTemplates = ["Verse", "Chorus", "Bridge"];
 
 const sectionConfig = [
@@ -179,6 +210,15 @@ function App() {
 
       return { ...current, focus: next.length ? next : focus };
     });
+  }
+
+  function applyAnalysisPreset(preset) {
+    setForm((current) => ({
+      ...current,
+      detail: preset.detail,
+      tone: preset.tone,
+      focus: normalizeFocus(preset.focus)
+    }));
   }
 
   async function interpretLyrics(event) {
@@ -479,6 +519,27 @@ function App() {
               spellCheck="true"
             />
           </label>
+
+          <fieldset className="preset-grid">
+            <legend>Preset</legend>
+            {analysisPresets.map((preset) => {
+              const active =
+                form.detail === preset.detail &&
+                form.tone === preset.tone &&
+                sameSet(normalizeFocus(form.focus), preset.focus);
+
+              return (
+                <button
+                  key={preset.id}
+                  type="button"
+                  className={active ? "active" : ""}
+                  onClick={() => applyAnalysisPreset(preset)}
+                >
+                  {preset.label}
+                </button>
+              );
+            })}
+          </fieldset>
 
           <fieldset className="segmented">
             <legend>Depth</legend>
@@ -1284,6 +1345,10 @@ function getToneLabel(value) {
 
 function getFocusLabel(value) {
   return focusOptions.find(([option]) => option === value)?.[1] || capitalize(String(value));
+}
+
+function sameSet(left, right) {
+  return left.length === right.length && left.every((item) => right.includes(item));
 }
 
 function getHistoryFingerprint(entry) {

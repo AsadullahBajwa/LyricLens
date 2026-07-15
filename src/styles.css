@@ -276,6 +276,37 @@ legend {
   font-weight: 900;
 }
 
+.preset-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+  margin: 0;
+  padding: 6px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #f4f0f8;
+}
+
+.preset-grid legend {
+  padding: 0 5px;
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.preset-grid button {
+  min-height: 36px;
+  border-radius: 6px;
+  color: var(--muted);
+  background: transparent;
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.preset-grid button.active {
+  color: #ffffff;
+  background: var(--violet);
+}
+
 input,
 textarea {
   width: 100%;
@@ -938,6 +969,10 @@ mark {
 
   .template-row {
     justify-content: flex-start;
+  }
+
+  .preset-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .segmented {
