@@ -136,6 +136,7 @@ function App() {
   const [resultQuery, setResultQuery] = useState("");
   const [collapsedSections, setCollapsedSections] = useState([]);
   const fileInput = useRef(null);
+  const historyInput = useRef(null);
 
   const lyricStats = useMemo(() => getLyricStats(form.lyrics), [form.lyrics]);
   const lyricUsagePercent = Math.min((lyricStats.characters / MAX_LYRICS_CHARS) * 100, 100);
@@ -432,6 +433,45 @@ function App() {
 
   function clearHistory() {
     setHistory((current) => current.filter((entry) => entry.favorite));
+  }
+
+  function exportHistory() {
+    if (!history.length) return;
+
+    const blob = new Blob([
+      JSON.stringify({ exportedAt: new Date().toISOString(), items: history }, null, 2)
+    ], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "lyriclens-history.json";
+    link.click();
+    URL.revokeObjectURL(url);
+  }
+
+  async function importHistory(event) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const raw = JSON.parse(await file.text());
+      const items = Array.isArray(raw) ? raw : raw.items;
+      const imported = Array.isArray(items)
+        ? items.map(normalizeHistoryEntry).filter(Boolean)
+        : [];
+
+      if (!imported.length) {
+        setError("No valid history entries found in that file.");
+        return;
+      }
+
+      setHistory((current) => mergeHistoryEntries([...imported, ...current]));
+      setError("");
+    } catch {
+      setError("History import must be a valid LyricLens JSON file.");
+    } finally {
+      event.target.value = "";
+    }
   }
 
   function toggleSection(sectionKey) {
@@ -773,10 +813,19 @@ function App() {
             history={history}
             historyQuery={historyQuery}
             onClear={clearHistory}
+            onExport={exportHistory}
             onHistoryQueryChange={setHistoryQuery}
+            onImport={() => historyInput.current?.click()}
             onToggleFavorite={toggleFavoriteHistory}
             onRestore={restoreHistory}
             onRemove={removeHistoryEntry}
+          />
+          <input
+            ref={historyInput}
+            className="sr-only"
+            type="file"
+            accept=".json,application/json"
+            onChange={importHistory}
           />
 
           {result ? (
@@ -877,7 +926,9 @@ function HistoryPanel({
   history,
   historyQuery,
   onClear,
+  onExport,
   onHistoryQueryChange,
+  onImport,
   onToggleFavorite,
   onRestore,
   onRemove
@@ -893,15 +944,35 @@ function HistoryPanel({
           <History size={17} />
           <span>Recent</span>
         </div>
-        <button
-          type="button"
-          className="icon-button tiny"
-          aria-label="Clear unpinned recent interpretations"
-          title="Clear unpinned recent interpretations"
-          onClick={onClear}
-        >
-          <Trash2 size={15} />
-        </button>
+        <div className="history-actions">
+          <button
+            type="button"
+            className="icon-button tiny"
+            aria-label="Import interpretation history"
+            title="Import interpretation history"
+            onClick={onImport}
+          >
+            <FileUp size={15} />
+          </button>
+          <button
+            type="button"
+            className="icon-button tiny"
+            aria-label="Export interpretation history"
+            title="Export interpretation history"
+            onClick={onExport}
+          >
+            <Download size={15} />
+          </button>
+          <button
+            type="button"
+            className="icon-button tiny"
+            aria-label="Clear unpinned recent interpretations"
+            title="Clear unpinned recent interpretations"
+            onClick={onClear}
+          >
+            <Trash2 size={15} />
+          </button>
+        </div>
       </div>
       <label className="history-search">
         <Search size={16} />
@@ -1290,14 +1361,8 @@ function loadHistory() {
   if (!Array.isArray(value)) return [];
 
   return value
-    .filter((entry) => entry?.id && entry?.interpretation)
-    .map((entry) => ({
-      ...entry,
-      tone: normalizeTone(entry.tone),
-      focus: normalizeFocus(entry.focus),
-      favorite: Boolean(entry.favorite),
-      stats: entry.stats || getLyricStats(entry.lyrics || "")
-    }))
+    .map(normalizeHistoryEntry)
+    .filter(Boolean)
     .sort(compareHistoryEntries)
     .slice(0, MAX_HISTORY_ITEMS);
 }
@@ -1353,6 +1418,38 @@ function sameSet(left, right) {
 
 function getHistoryFingerprint(entry) {
   return [entry.title, entry.artist, entry.lyrics].join("\n").toLowerCase();
+}
+
+function normalizeHistoryEntry(entry) {
+  if (!entry?.interpretation) return null;
+
+  return {
+    id: entry.id || `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    title: entry.title || "",
+    artist: entry.artist || "",
+    notes: entry.notes || "",
+    lyrics: entry.lyrics || "",
+    detail: entry.detail || "plain",
+    tone: normalizeTone(entry.tone),
+    focus: normalizeFocus(entry.focus),
+    favorite: Boolean(entry.favorite),
+    stats: entry.stats || getLyricStats(entry.lyrics || ""),
+    createdAt: entry.createdAt || new Date().toISOString(),
+    interpretation: entry.interpretation
+  };
+}
+
+function mergeHistoryEntries(entries) {
+  const byFingerprint = new Map();
+
+  entries.forEach((entry) => {
+    const fingerprint = getHistoryFingerprint(entry);
+    if (!byFingerprint.has(fingerprint)) {
+      byFingerprint.set(fingerprint, entry);
+    }
+  });
+
+  return sortHistory([...byFingerprint.values()]);
 }
 
 function sortHistory(entries) {

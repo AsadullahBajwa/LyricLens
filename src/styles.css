@@ -586,6 +586,12 @@ button:disabled {
   gap: 10px;
 }
 
+.history-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
 .history-heading {
   gap: 7px;
   color: var(--muted);
