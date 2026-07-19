@@ -133,6 +133,7 @@ flowchart TD
 - Result metadata snapshots for title, artist, depth, voice, lenses, and lyric stats.
 - Clear-all recent history action.
 - Search, jump controls, collapsible sections, and expand/collapse-all actions for long interpretations.
+- Per-section copy actions for grabbing one interpretation section at a time.
 - Text file upload for `.txt`, `.md`, and `.text` files.
 - Copy plus `.txt`, `.md`, and structured `.json` download actions for the generated interpretation.
 - Print-friendly result view for paper or browser PDF output.
@@ -279,6 +280,7 @@ The frontend keeps the user workflow simple:
 - Result search filters sections and highlights the first match in each field.
 - Section number buttons jump to the matching output section.
 - Section headers collapse or expand long explanations, with bulk expand and collapse controls.
+- Each result section can be copied independently from its section header.
 - Copy exports all sections as plain text with result metadata.
 - Download saves `.txt`, `.md`, or `.json` files named from the saved song or artist fields when available.
 - Print opens the browser print flow with composer controls hidden.

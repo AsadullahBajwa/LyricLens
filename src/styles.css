@@ -788,6 +788,12 @@ button:disabled {
   background: #ffffff;
 }
 
+.section-heading-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
 .section-heading {
   display: flex;
   align-items: center;
@@ -797,6 +803,7 @@ button:disabled {
   color: var(--ink);
   background: transparent;
   cursor: pointer;
+  flex: 1;
   text-align: left;
 }
 

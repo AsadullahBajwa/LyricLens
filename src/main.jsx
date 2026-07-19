@@ -131,6 +131,7 @@ function App() {
   const [error, setError] = useState("");
   const [status, setStatus] = useState("idle");
   const [copied, setCopied] = useState(false);
+  const [copiedSection, setCopiedSection] = useState("");
   const [resultMeta, setResultMeta] = useState(null);
   const [history, setHistory] = useState(loadHistory);
   const [historyQuery, setHistoryQuery] = useState("");
@@ -282,6 +283,7 @@ function App() {
       setStatus("complete");
       setResultQuery("");
       setCollapsedSections([]);
+      setCopiedSection("");
       if (!privateMode) rememberInterpretation(form, data.interpretation, meta);
     } catch (err) {
       setStatus("idle");
@@ -302,6 +304,13 @@ function App() {
     await navigator.clipboard.writeText(plainText);
     setCopied(true);
     window.setTimeout(() => setCopied(false), 1800);
+  }
+
+  async function copyResultSection(sectionKey, title) {
+    if (!result) return;
+    await navigator.clipboard.writeText(sectionToText(sectionKey, title, result[sectionKey]));
+    setCopiedSection(sectionKey);
+    window.setTimeout(() => setCopiedSection(""), 1800);
   }
 
   function downloadResult(format = "txt") {
@@ -438,6 +447,7 @@ function App() {
     setStatus("complete");
     setError("");
     setCopied(false);
+    setCopiedSection("");
     setResultQuery("");
     setCollapsedSections([]);
   }
@@ -916,6 +926,8 @@ function App() {
           {result && status !== "loading" ? (
             <Interpretation
               collapsedSections={collapsedSections}
+              copiedSection={copiedSection}
+              onCopySection={copyResultSection}
               onToggleSection={toggleSection}
               query={resultQuery}
               result={result}
@@ -1069,7 +1081,14 @@ function ResultMeta({ meta }) {
   );
 }
 
-function Interpretation({ result, query, collapsedSections, onToggleSection }) {
+function Interpretation({
+  result,
+  query,
+  collapsedSections,
+  copiedSection,
+  onCopySection,
+  onToggleSection
+}) {
   const visibleSections = sectionConfig.filter(([key, title]) =>
     sectionMatches(title, result[key], query)
   );
@@ -1089,15 +1108,26 @@ function Interpretation({ result, query, collapsedSections, onToggleSection }) {
         const collapsed = collapsedSections.includes(key);
         return (
           <article className="result-section" id={`result-${key}`} key={key}>
-            <button
-              type="button"
-              className="section-heading"
-              aria-expanded={!collapsed}
-              onClick={() => onToggleSection(key)}
-            >
-              <h3>{title}</h3>
-              <ChevronDown className={collapsed ? "chevron collapsed" : "chevron"} size={18} />
-            </button>
+            <div className="section-heading-row">
+              <button
+                type="button"
+                className="section-heading"
+                aria-expanded={!collapsed}
+                onClick={() => onToggleSection(key)}
+              >
+                <h3>{title}</h3>
+                <ChevronDown className={collapsed ? "chevron collapsed" : "chevron"} size={18} />
+              </button>
+              <button
+                type="button"
+                className="icon-button tiny"
+                aria-label={`Copy ${title}`}
+                title={`Copy ${title}`}
+                onClick={() => onCopySection(key, title)}
+              >
+                {copiedSection === key ? <Check size={15} /> : <Clipboard size={15} />}
+              </button>
+            </div>
             {!collapsed ? <SectionBody type={key} value={result[key]} query={query} /> : null}
           </article>
         );
@@ -1220,30 +1250,31 @@ function resultToText(result, meta) {
     : "";
 
   const body = sectionConfig
-    .map(([key, title]) => {
-      const value = result[key];
-      if (typeof value === "string") {
-        return `${title}\n${value}`;
-      }
-
-      if (!Array.isArray(value) || value.length === 0) {
-        return `${title}\nNo clear items found.`;
-      }
-
-      const lines = value.map((item) => {
-        if (key === "verseByVerse") return `${item.section}: ${item.explanation}`;
-        if (key === "slangAndPhrases") return `${item.phrase}: ${item.meaning}`;
-        if (key === "references") {
-          return `${item.reference} (${item.certainty}): ${item.explanation}`;
-        }
-        return `${item.lineHint}: ${item.possibleMeanings}`;
-      });
-
-      return `${title}\n${lines.join("\n")}`;
-    })
+    .map(([key, title]) => sectionToText(key, title, result[key]))
     .join("\n\n");
 
   return [header, body].filter(Boolean).join("\n\n");
+}
+
+function sectionToText(key, title, value) {
+  if (typeof value === "string") {
+    return `${title}\n${value}`;
+  }
+
+  if (!Array.isArray(value) || value.length === 0) {
+    return `${title}\nNo clear items found.`;
+  }
+
+  const lines = value.map((item) => {
+    if (key === "verseByVerse") return `${item.section}: ${item.explanation}`;
+    if (key === "slangAndPhrases") return `${item.phrase}: ${item.meaning}`;
+    if (key === "references") {
+      return `${item.reference} (${item.certainty}): ${item.explanation}`;
+    }
+    return `${item.lineHint}: ${item.possibleMeanings}`;
+  });
+
+  return `${title}\n${lines.join("\n")}`;
 }
 
 function resultToMarkdown(result, context) {
