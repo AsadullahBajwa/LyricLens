@@ -19,6 +19,7 @@ import {
   Printer,
   Save,
   Search,
+  Shield,
   Sparkles,
   Star,
   Trash2,
@@ -28,7 +29,8 @@ import "./styles.css";
 
 const STORAGE_KEYS = {
   draft: "lyriclens:draft:v2",
-  history: "lyriclens:history:v1"
+  history: "lyriclens:history:v1",
+  preferences: "lyriclens:preferences:v1"
 };
 
 const MAX_HISTORY_ITEMS = 8;
@@ -132,6 +134,9 @@ function App() {
   const [resultMeta, setResultMeta] = useState(null);
   const [history, setHistory] = useState(loadHistory);
   const [historyQuery, setHistoryQuery] = useState("");
+  const [privateMode, setPrivateMode] = useState(() =>
+    Boolean(readStorage(STORAGE_KEYS.preferences)?.privateMode)
+  );
   const [draftSavedAt, setDraftSavedAt] = useState(() => readStorage(STORAGE_KEYS.draft)?.savedAt || "");
   const [resultQuery, setResultQuery] = useState("");
   const [collapsedSections, setCollapsedSections] = useState([]);
@@ -154,6 +159,12 @@ function App() {
   );
 
   useEffect(() => {
+    if (privateMode) {
+      window.localStorage.removeItem(STORAGE_KEYS.draft);
+      setDraftSavedAt("");
+      return;
+    }
+
     const timer = window.setTimeout(() => {
       if (!hasDraftContent(form)) {
         window.localStorage.removeItem(STORAGE_KEYS.draft);
@@ -172,7 +183,11 @@ function App() {
     }, 350);
 
     return () => window.clearTimeout(timer);
-  }, [form]);
+  }, [form, privateMode]);
+
+  useEffect(() => {
+    saveStorage(STORAGE_KEYS.preferences, { privateMode });
+  }, [privateMode]);
 
   useEffect(() => {
     saveStorage(STORAGE_KEYS.history, history);
@@ -267,7 +282,7 @@ function App() {
       setStatus("complete");
       setResultQuery("");
       setCollapsedSections([]);
-      rememberInterpretation(form, data.interpretation, meta);
+      if (!privateMode) rememberInterpretation(form, data.interpretation, meta);
     } catch (err) {
       setStatus("idle");
       setError(
@@ -316,6 +331,12 @@ function App() {
   }
 
   function saveDraftNow() {
+    if (privateMode) {
+      window.localStorage.removeItem(STORAGE_KEYS.draft);
+      setDraftSavedAt("");
+      return;
+    }
+
     const savedAt = new Date().toISOString();
     saveStorage(STORAGE_KEYS.draft, {
       ...form,
@@ -328,6 +349,10 @@ function App() {
 
   function cleanLyrics() {
     updateField("lyrics", normalizeLyrics(form.lyrics));
+  }
+
+  function togglePrivateMode() {
+    setPrivateMode((current) => !current);
   }
 
   function insertSectionTemplate(template) {
@@ -527,7 +552,7 @@ function App() {
             <Metric label="Read" value={lyricStats.readingMinutes ? `${lyricStats.readingMinutes} min` : "0 min"} />
             <Metric
               label="Draft"
-              value={draftSavedAt ? formatTime(draftSavedAt) : "Unsaved"}
+              value={privateMode ? "Private" : draftSavedAt ? formatTime(draftSavedAt) : "Unsaved"}
             />
           </div>
 
@@ -713,11 +738,20 @@ function App() {
               </button>
               <button
                 type="button"
+                className={privateMode ? "icon-button private-button active" : "icon-button private-button"}
+                aria-label={privateMode ? "Disable private mode" : "Enable private mode"}
+                title={privateMode ? "Disable private mode" : "Enable private mode"}
+                onClick={togglePrivateMode}
+              >
+                <Shield size={18} />
+              </button>
+              <button
+                type="button"
                 className="icon-button"
                 aria-label="Save draft"
-                title="Save draft"
+                title={privateMode ? "Draft saving is paused in private mode" : "Save draft"}
                 onClick={saveDraftNow}
-                disabled={!hasDraftContent(form)}
+                disabled={!hasDraftContent(form) || privateMode}
               >
                 <Save size={18} />
               </button>

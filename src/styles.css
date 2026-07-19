@@ -525,6 +525,11 @@ textarea:focus {
   fill: currentColor;
 }
 
+.private-button.active {
+  color: #ffffff;
+  background: var(--teal);
+}
+
 .primary-button {
   gap: 8px;
   padding: 0 18px;
