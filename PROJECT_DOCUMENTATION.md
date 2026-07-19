@@ -123,6 +123,7 @@ flowchart TD
 - Interpretation lens selector for themes, craft, context, and ambiguity.
 - Built-in original demo lyric for quick app testing.
 - Quick section-template insert buttons for verse, chorus, and bridge headers.
+- Local lyric quality hints for structure, excerpt length, long lines, and repetition.
 - Lyric formatting cleanup plus character, word, line, section, unique-word, and read-time stats.
 - Private mode that pauses local draft autosave and skips new history saves.
 - Autosaved local drafts.
@@ -265,6 +266,7 @@ The frontend keeps the user workflow simple:
 - Context notes can add album, genre, release, or personal context without mixing that text into the lyrics box.
 - Analysis presets update depth, response voice, and interpretation lenses together.
 - Section-template buttons insert common lyric headers into the lyrics box.
+- Lyric quality hints update locally before submission and do not require an API request.
 - The response voice selector changes the explanation style sent to the API.
 - Lyric stats update as the user types, including detected bracketed sections and estimated read time.
 - A character-limit meter mirrors the server-side 24,000-character maximum and disables submission when exceeded.

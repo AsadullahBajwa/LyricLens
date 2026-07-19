@@ -145,6 +145,7 @@ function App() {
   const historyInput = useRef(null);
 
   const lyricStats = useMemo(() => getLyricStats(form.lyrics), [form.lyrics]);
+  const lyricHints = useMemo(() => getLyricHints(form.lyrics, lyricStats), [form.lyrics, lyricStats]);
   const lyricUsagePercent = Math.min((lyricStats.characters / MAX_LYRICS_CHARS) * 100, 100);
   const isOverLimit = lyricStats.characters > MAX_LYRICS_CHARS;
   const canSubmit = form.lyrics.trim().length > 0 && !isOverLimit && status !== "loading";
@@ -708,6 +709,8 @@ function App() {
             </p>
           </div>
 
+          {form.lyrics.trim() ? <LyricHints hints={lyricHints} /> : null}
+
           <div className="composer-footer">
             <p>{lyricStats.characters.toLocaleString()} characters</p>
             <div className="button-row">
@@ -964,6 +967,19 @@ function LoadingState() {
     <div className="loading-state">
       <Loader2 className="spin" size={28} />
       <p>Listening closely</p>
+    </div>
+  );
+}
+
+function LyricHints({ hints }) {
+  return (
+    <div className="lyric-hints" aria-label="Lyric draft hints">
+      {hints.map((hint) => (
+        <div className={`lyric-hint ${hint.level}`} key={hint.text}>
+          <span>{hint.label}</span>
+          <p>{hint.text}</p>
+        </div>
+      ))}
     </div>
   );
 }
@@ -1357,6 +1373,57 @@ function getLyricStats(lyrics) {
     sections: lines.filter((line) => /^\[[^\]]+\]$/.test(line.trim())).length,
     readingMinutes: words.length ? Math.max(1, Math.ceil(words.length / 180)) : 0
   };
+}
+
+function getLyricHints(lyrics, stats) {
+  const trimmed = lyrics.trim();
+  if (!trimmed) return [];
+
+  const lines = lyrics.split(/\r\n|\r|\n/).filter((line) => line.trim());
+  const longLines = lines.filter((line) => line.length > 120).length;
+  const hints = [];
+
+  if (stats.sections === 0) {
+    hints.push({
+      level: "tip",
+      label: "Structure",
+      text: "Add bracketed section headers to improve verse-by-verse parsing."
+    });
+  }
+
+  if (stats.words > 0 && stats.words < 40) {
+    hints.push({
+      level: "tip",
+      label: "Excerpt",
+      text: "This is a short excerpt, so interpretation may be lighter than usual."
+    });
+  }
+
+  if (longLines) {
+    hints.push({
+      level: "warn",
+      label: "Line Length",
+      text: `${longLines} line${longLines === 1 ? "" : "s"} are over 120 characters. Splitting them can improve readability.`
+    });
+  }
+
+  if (stats.words >= 80 && stats.uniqueWords / stats.words < 0.42) {
+    hints.push({
+      level: "tip",
+      label: "Repetition",
+      text: "High repetition detected. Add context notes if repeated hooks carry special meaning."
+    });
+  }
+
+  return hints.length
+    ? hints
+    : [
+        {
+          level: "good",
+          label: "Ready",
+          text: "Lyric structure looks ready for interpretation."
+        }
+      ];
 }
 
 function normalizeLyrics(lyrics) {
