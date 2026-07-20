@@ -120,6 +120,7 @@ flowchart TD
 - Analysis presets for balanced, close-read, classroom, and cautious interpretation modes.
 - Explanation depth selector with `Plain`, `Deep`, and `Cautious` modes.
 - Response voice selector with neutral, literary, direct, and classroom modes.
+- Output language selector for English, Spanish, French, German, and Urdu interpretations.
 - Interpretation lens selector for themes, craft, context, and ambiguity.
 - Built-in original demo lyric for quick app testing.
 - Quick section-template insert buttons for verse, chorus, and bridge headers.
@@ -268,6 +269,7 @@ The frontend keeps the user workflow simple:
 - Section-template buttons insert common lyric headers into the lyrics box.
 - Lyric quality hints update locally before submission and do not require an API request.
 - The response voice selector changes the explanation style sent to the API.
+- The output language selector asks the API to return the structured interpretation in the selected language.
 - Lyric stats update as the user types, including detected bracketed sections and estimated read time.
 - A character-limit meter mirrors the server-side 24,000-character maximum and disables submission when exceeded.
 - The cleanup action normalizes line endings, trims trailing whitespace, and collapses excessive blank lines.

@@ -5,6 +5,7 @@ const MAX_NOTES_CHARS = 2000;
 const OPENAI_TIMEOUT_MS = clampNumber(Number(process.env.OPENAI_TIMEOUT_MS), 5000, 120000, 45000);
 const ALLOWED_FOCUS = ["themes", "craft", "context", "ambiguity"];
 const ALLOWED_TONES = ["neutral", "literary", "direct", "classroom"];
+const ALLOWED_LANGUAGES = ["english", "spanish", "french", "german", "urdu"];
 
 const focusGuidance = {
   themes: "emotional themes, story, and speaker motivation",
@@ -18,6 +19,14 @@ const toneGuidance = {
   literary: "more attention to imagery, symbolism, and craft without overclaiming",
   direct: "concise, practical explanation with minimal flourish",
   classroom: "teacherly explanation that defines concepts and keeps reasoning explicit"
+};
+
+const languageGuidance = {
+  english: "English",
+  spanish: "Spanish",
+  french: "French",
+  german: "German",
+  urdu: "Urdu"
 };
 
 const headers = {
@@ -153,6 +162,7 @@ export async function handler(event) {
     ? payload.detail
     : "plain";
   const tone = normalizeTone(payload.tone);
+  const language = normalizeLanguage(payload.language);
   const focus = normalizeFocus(payload.focus);
 
   if (!lyrics) {
@@ -177,6 +187,7 @@ export async function handler(event) {
     notes ? `User-provided context notes: ${notes}` : "User-provided context notes: not provided",
     `Explanation depth: ${detail}`,
     `Response voice: ${toneGuidance[tone]}`,
+    `Output language: ${languageGuidance[language]}`,
     `Interpretation lenses: ${focus.map((item) => focusGuidance[item]).join("; ")}`,
     "",
     "Lyrics:",
@@ -280,6 +291,10 @@ function normalizeFocus(value) {
 
 function normalizeTone(value) {
   return ALLOWED_TONES.includes(value) ? value : "neutral";
+}
+
+function normalizeLanguage(value) {
+  return ALLOWED_LANGUAGES.includes(value) ? value : "english";
 }
 
 function clampNumber(value, min, max, fallback) {

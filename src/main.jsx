@@ -43,6 +43,7 @@ const emptyForm = {
   lyrics: "",
   detail: "plain",
   tone: "neutral",
+  language: "english",
   focus: ["themes", "context"]
 };
 
@@ -80,6 +81,14 @@ const toneOptions = [
   ["literary", "Literary"],
   ["direct", "Direct"],
   ["classroom", "Classroom"]
+];
+
+const languageOptions = [
+  ["english", "English"],
+  ["spanish", "Spanish"],
+  ["french", "French"],
+  ["german", "German"],
+  ["urdu", "Urdu"]
 ];
 
 const analysisPresets = [
@@ -178,6 +187,7 @@ function App() {
       saveStorage(STORAGE_KEYS.draft, {
         ...form,
         tone: normalizeTone(form.tone),
+        language: normalizeLanguage(form.language),
         focus: normalizeFocus(form.focus),
         savedAt
       });
@@ -267,6 +277,7 @@ function App() {
         body: JSON.stringify({
           ...form,
           tone: normalizeTone(form.tone),
+          language: normalizeLanguage(form.language),
           focus: normalizeFocus(form.focus)
         }),
         signal: controller.signal
@@ -351,6 +362,7 @@ function App() {
     saveStorage(STORAGE_KEYS.draft, {
       ...form,
       tone: normalizeTone(form.tone),
+      language: normalizeLanguage(form.language),
       focus: normalizeFocus(form.focus),
       savedAt
     });
@@ -379,6 +391,7 @@ function App() {
       ...demoLyrics,
       detail: "plain",
       tone: "literary",
+      language: "english",
       focus: ["themes", "craft"]
     });
     setResult(null);
@@ -441,6 +454,7 @@ function App() {
       lyrics: entry.lyrics || "",
       detail: entry.detail || "plain",
       tone: normalizeTone(entry.tone),
+      language: normalizeLanguage(entry.language),
       focus: normalizeFocus(entry.focus)
     });
     setResult(entry.interpretation);
@@ -643,6 +657,22 @@ function App() {
                   value={option}
                   checked={form.tone === option}
                   onChange={(event) => updateField("tone", event.target.value)}
+                />
+                <span>{label}</span>
+              </label>
+            ))}
+          </fieldset>
+
+          <fieldset className="segmented language-grid">
+            <legend>Output Language</legend>
+            {languageOptions.map(([option, label]) => (
+              <label key={option} className={form.language === option ? "active" : ""}>
+                <input
+                  type="radio"
+                  name="language"
+                  value={option}
+                  checked={form.language === option}
+                  onChange={(event) => updateField("language", event.target.value)}
                 />
                 <span>{label}</span>
               </label>
@@ -1090,6 +1120,7 @@ function ResultMeta({ meta }) {
       <span>{meta.artist || "Unknown artist"}</span>
       <span>{capitalize(meta.detail || "plain")}</span>
       <span>{getToneLabel(meta.tone)}</span>
+      <span>{getLanguageLabel(meta.language)}</span>
       <span>{normalizeFocus(meta.focus).map(getFocusLabel).join(", ")}</span>
       <span>{meta.stats?.words?.toLocaleString() || 0} words</span>
       <span>{meta.stats?.sections?.toLocaleString() || 0} sections</span>
@@ -1261,6 +1292,7 @@ function resultToText(result, meta) {
         meta.notes ? `Context notes: ${meta.notes}` : "",
         `Depth: ${capitalize(meta.detail || "plain")}`,
         `Voice: ${getToneLabel(meta.tone)}`,
+        `Language: ${getLanguageLabel(meta.language)}`,
         `Lenses: ${normalizeFocus(meta.focus).map(getFocusLabel).join(", ")}`
       ].filter(Boolean).join("\n")
     : "";
@@ -1300,6 +1332,7 @@ function resultToMarkdown(result, context) {
   const details = [
     `**Depth:** ${capitalize(context.detail || "plain")}`,
     `**Voice:** ${getToneLabel(context.tone)}`,
+    `**Language:** ${getLanguageLabel(context.language)}`,
     `**Lenses:** ${normalizeFocus(context.focus).map(getFocusLabel).join(", ")}`,
     context.notes ? `**Context Notes:** ${context.notes}` : ""
   ].filter(Boolean);
@@ -1344,6 +1377,7 @@ function resultToJson(result, context) {
         notes: context.notes || "",
         detail: context.detail || "plain",
         tone: normalizeTone(context.tone),
+        language: normalizeLanguage(context.language),
         focus: normalizeFocus(context.focus),
         stats: context.stats || null,
         createdAt: context.createdAt || null
@@ -1475,6 +1509,7 @@ function createInitialForm() {
     ...emptyForm,
     ...draft,
     tone: normalizeTone(draft.tone),
+    language: normalizeLanguage(draft.language),
     focus: normalizeFocus(draft.focus)
   };
 }
@@ -1504,6 +1539,11 @@ function normalizeTone(value) {
   return allowed.includes(value) ? value : emptyForm.tone;
 }
 
+function normalizeLanguage(value) {
+  const allowed = languageOptions.map(([option]) => option);
+  return allowed.includes(value) ? value : emptyForm.language;
+}
+
 function normalizeFocus(value) {
   const allowed = focusOptions.map(([option]) => option);
   const selected = Array.isArray(value) ? value.filter((item) => allowed.includes(item)) : [];
@@ -1517,6 +1557,7 @@ function createResultMeta(source, createdAt = new Date().toISOString()) {
     notes: source.notes?.trim() || "",
     detail: source.detail || "plain",
     tone: normalizeTone(source.tone),
+    language: normalizeLanguage(source.language),
     focus: normalizeFocus(source.focus),
     stats: getLyricStats(source.lyrics || ""),
     createdAt
@@ -1530,6 +1571,7 @@ function hydrateResultMeta(entry) {
     notes: entry.notes || "",
     detail: entry.detail || "plain",
     tone: normalizeTone(entry.tone),
+    language: normalizeLanguage(entry.language),
     focus: normalizeFocus(entry.focus),
     stats: entry.stats || getLyricStats(entry.lyrics || ""),
     createdAt: entry.createdAt || new Date().toISOString()
@@ -1538,6 +1580,10 @@ function hydrateResultMeta(entry) {
 
 function getToneLabel(value) {
   return toneOptions.find(([option]) => option === normalizeTone(value))?.[1] || "Neutral";
+}
+
+function getLanguageLabel(value) {
+  return languageOptions.find(([option]) => option === normalizeLanguage(value))?.[1] || "English";
 }
 
 function getFocusLabel(value) {
@@ -1563,6 +1609,7 @@ function normalizeHistoryEntry(entry) {
     lyrics: entry.lyrics || "",
     detail: entry.detail || "plain",
     tone: normalizeTone(entry.tone),
+    language: normalizeLanguage(entry.language),
     focus: normalizeFocus(entry.focus),
     favorite: Boolean(entry.favorite),
     stats: entry.stats || getLyricStats(entry.lyrics || ""),
