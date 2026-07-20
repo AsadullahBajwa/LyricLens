@@ -675,6 +675,31 @@ button:disabled {
   box-shadow: none;
 }
 
+.history-filter {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  padding: 5px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #f6f8f6;
+}
+
+.history-filter button {
+  min-height: 32px;
+  border-radius: 6px;
+  color: var(--muted);
+  background: transparent;
+  cursor: pointer;
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.history-filter button.active {
+  color: #ffffff;
+  background: var(--teal);
+}
+
 .history-list {
   display: grid;
   grid-auto-columns: minmax(210px, 280px);

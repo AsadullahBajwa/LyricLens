@@ -143,6 +143,7 @@ function App() {
   const [copiedSection, setCopiedSection] = useState("");
   const [resultMeta, setResultMeta] = useState(null);
   const [history, setHistory] = useState(loadHistory);
+  const [historyFilter, setHistoryFilter] = useState("all");
   const [historyQuery, setHistoryQuery] = useState("");
   const [privateMode, setPrivateMode] = useState(() =>
     Boolean(readStorage(STORAGE_KEYS.preferences)?.privateMode)
@@ -910,9 +911,11 @@ function App() {
 
           <HistoryPanel
             history={history}
+            historyFilter={historyFilter}
             historyQuery={historyQuery}
             onClear={clearHistory}
             onExport={exportHistory}
+            onFilterChange={setHistoryFilter}
             onHistoryQueryChange={setHistoryQuery}
             onImport={() => historyInput.current?.click()}
             onToggleFavorite={toggleFavoriteHistory}
@@ -1038,9 +1041,11 @@ function LyricHints({ hints }) {
 
 function HistoryPanel({
   history,
+  historyFilter,
   historyQuery,
   onClear,
   onExport,
+  onFilterChange,
   onHistoryQueryChange,
   onImport,
   onToggleFavorite,
@@ -1049,7 +1054,10 @@ function HistoryPanel({
 }) {
   if (!history.length) return null;
 
-  const visibleHistory = history.filter((entry) => historyMatches(entry, historyQuery));
+  const visibleHistory = history.filter(
+    (entry) =>
+      (historyFilter === "all" || entry.favorite) && historyMatches(entry, historyQuery)
+  );
 
   return (
     <section className="history-panel" aria-label="Recent interpretations">
@@ -1096,6 +1104,21 @@ function HistoryPanel({
           placeholder="Search history"
         />
       </label>
+      <div className="history-filter" aria-label="History filter">
+        {[
+          ["all", "All"],
+          ["pinned", "Pinned"]
+        ].map(([filter, label]) => (
+          <button
+            key={filter}
+            type="button"
+            className={historyFilter === filter ? "active" : ""}
+            onClick={() => onFilterChange(filter)}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
       <div className="history-list">
         {visibleHistory.map((entry) => (
           <div className="history-item" key={entry.id}>
