@@ -128,6 +128,7 @@ flowchart TD
 - Lyric formatting cleanup plus character, word, line, section, unique-word, and read-time stats.
 - Private mode that pauses local draft autosave and skips new history saves.
 - Autosaved local drafts.
+- Downloadable draft snapshots for saving the current lyric workspace before interpretation.
 - Recent interpretation history with one-click restore and removal.
 - Pinned history entries that stay above regular recents and survive clearing unpinned history.
 - Searchable interpretation history.
@@ -274,6 +275,7 @@ The frontend keeps the user workflow simple:
 - A character-limit meter mirrors the server-side 24,000-character maximum and disables submission when exceeded.
 - The cleanup action normalizes line endings, trims trailing whitespace, and collapses excessive blank lines.
 - Drafts autosave to `localStorage` and are restored on the next visit.
+- Draft downloads include song metadata, selected settings, lyric stats, context notes, and lyrics.
 - Private mode removes the current draft, pauses manual draft saving, and avoids adding completed interpretations to local history.
 - Loading state shows while the function is running.
 - Errors are shown inline in a visible alert.

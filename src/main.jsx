@@ -346,6 +346,18 @@ function App() {
     URL.revokeObjectURL(url);
   }
 
+  function downloadDraft() {
+    if (!hasDraftContent(form)) return;
+
+    const blob = new Blob([draftToText(form, lyricStats)], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = makeFilename(form, "draft.txt");
+    link.click();
+    URL.revokeObjectURL(url);
+  }
+
   function printResult() {
     if (!result) return;
     window.print();
@@ -787,6 +799,16 @@ function App() {
                 onClick={togglePrivateMode}
               >
                 <Shield size={18} />
+              </button>
+              <button
+                type="button"
+                className="icon-button"
+                aria-label="Download draft"
+                title="Download draft"
+                onClick={downloadDraft}
+                disabled={!hasDraftContent(form)}
+              >
+                <FileText size={18} />
               </button>
               <button
                 type="button"
@@ -1302,6 +1324,24 @@ function resultToText(result, meta) {
     .join("\n\n");
 
   return [header, body].filter(Boolean).join("\n\n");
+}
+
+function draftToText(form, stats) {
+  return [
+    `Title: ${form.title || "Untitled lyrics"}`,
+    `Artist: ${form.artist || "Unknown artist"}`,
+    form.notes ? `Context notes: ${form.notes}` : "",
+    `Depth: ${capitalize(form.detail || "plain")}`,
+    `Voice: ${getToneLabel(form.tone)}`,
+    `Language: ${getLanguageLabel(form.language)}`,
+    `Lenses: ${normalizeFocus(form.focus).map(getFocusLabel).join(", ")}`,
+    `Stats: ${stats.words.toLocaleString()} words, ${stats.lines.toLocaleString()} lines, ${stats.sections.toLocaleString()} sections`,
+    "",
+    "Lyrics:",
+    form.lyrics || ""
+  ]
+    .filter((line) => line !== "")
+    .join("\n");
 }
 
 function sectionToText(key, title, value) {
