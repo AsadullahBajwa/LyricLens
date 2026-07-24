@@ -152,6 +152,7 @@ function App() {
   const [error, setError] = useState("");
   const [status, setStatus] = useState("idle");
   const [copied, setCopied] = useState(false);
+  const [copiedDraft, setCopiedDraft] = useState(false);
   const [copiedSection, setCopiedSection] = useState("");
   const [resultMeta, setResultMeta] = useState(null);
   const [history, setHistory] = useState(loadHistory);
@@ -339,6 +340,13 @@ function App() {
     await navigator.clipboard.writeText(sectionToText(sectionKey, title, result[sectionKey]));
     setCopiedSection(sectionKey);
     window.setTimeout(() => setCopiedSection(""), 1800);
+  }
+
+  async function copyDraft() {
+    if (!hasDraftContent(form)) return;
+    await navigator.clipboard.writeText(draftToText(form, lyricStats));
+    setCopiedDraft(true);
+    window.setTimeout(() => setCopiedDraft(false), 1800);
   }
 
   function downloadResult(format = "txt") {
@@ -835,6 +843,16 @@ function App() {
                 onClick={togglePrivateMode}
               >
                 <Shield size={18} />
+              </button>
+              <button
+                type="button"
+                className="icon-button"
+                aria-label="Copy draft"
+                title="Copy draft"
+                onClick={copyDraft}
+                disabled={!hasDraftContent(form)}
+              >
+                {copiedDraft ? <Check size={18} /> : <Clipboard size={18} />}
               </button>
               <button
                 type="button"
