@@ -23,7 +23,8 @@ import {
   Sparkles,
   Star,
   Trash2,
-  Wand2
+  Wand2,
+  X
 } from "lucide-react";
 import "./styles.css";
 
@@ -181,6 +182,13 @@ function App() {
   const jsonText = useMemo(
     () => (result ? resultToJson(result, exportContext) : ""),
     [exportContext, result]
+  );
+  const resultMatchCount = useMemo(
+    () =>
+      result
+        ? sectionConfig.filter(([key, title]) => sectionMatches(title, result[key], resultQuery)).length
+        : 0,
+    [result, resultQuery]
   );
 
   useEffect(() => {
@@ -985,14 +993,32 @@ function App() {
 
           {result ? (
             <div className="result-tools">
-              <label className="search-field">
-                <Search size={17} />
-                <input
-                  value={resultQuery}
-                  onChange={(event) => setResultQuery(event.target.value)}
-                  placeholder="Search sections"
-                />
-              </label>
+              <div className="result-search-group">
+                <label className="search-field">
+                  <Search size={17} />
+                  <input
+                    value={resultQuery}
+                    onChange={(event) => setResultQuery(event.target.value)}
+                    placeholder="Search sections"
+                  />
+                  {resultQuery ? (
+                    <button
+                      type="button"
+                      className="search-clear"
+                      aria-label="Clear section search"
+                      title="Clear section search"
+                      onClick={() => setResultQuery("")}
+                    >
+                      <X size={14} />
+                    </button>
+                  ) : null}
+                </label>
+                <span className="result-count" aria-live="polite">
+                  {resultQuery.trim()
+                    ? `${resultMatchCount} of ${sectionConfig.length} sections`
+                    : `${sectionConfig.length} sections`}
+                </span>
+              </div>
               <div className="result-nav">
                 <div className="section-actions">
                   <button

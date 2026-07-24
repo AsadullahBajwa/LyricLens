@@ -136,7 +136,7 @@ flowchart TD
 - History import and export for backing up local saved interpretations.
 - Result metadata snapshots for title, artist, depth, voice, audience, language, lenses, and lyric stats.
 - Clear-all recent history action.
-- Search, jump controls, collapsible sections, and expand/collapse-all actions for long interpretations.
+- Search with match counts, jump controls, collapsible sections, and expand/collapse-all actions for long interpretations.
 - Per-section copy actions for grabbing one interpretation section at a time.
 - Text file upload for `.txt`, `.md`, and `.text` files.
 - Copy plus `.txt`, `.md`, and structured `.json` download actions for the generated interpretation.
@@ -285,7 +285,7 @@ The frontend keeps the user workflow simple:
 - Completed results show the saved interpretation settings used for that run.
 - Recent results are saved locally and can be restored from the output panel.
 - Recent history can be filtered, searched, pinned, imported, exported, removed, or cleared from the output panel.
-- Result search filters sections and highlights the first match in each field.
+- Result search filters sections, reports the matching section count, can be cleared in place, and highlights the first match in each field.
 - Section number buttons jump to the matching output section.
 - Section headers collapse or expand long explanations, with bulk expand and collapse controls.
 - Each result section can be copied independently from its section header.
