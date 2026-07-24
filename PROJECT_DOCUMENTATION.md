@@ -2,7 +2,7 @@
 
 ## Overview
 
-LyricLens is a web-based music interpretation assistant built for Netlify. A user can paste lyrics, optionally provide the song title and artist, choose the desired explanation depth, and receive a structured plain-English interpretation.
+LyricLens is a web-based music interpretation assistant built for Netlify. A user can paste lyrics, optionally provide the song title and artist, choose the desired explanation depth and target audience, and receive a structured interpretation.
 
 The application is designed around the requested output sections:
 
@@ -71,7 +71,7 @@ sequenceDiagram
   participant API as Netlify Function
   participant OpenAI as OpenAI Responses API
 
-  User->>UI: Enter lyrics, depth, voice, and lenses
+  User->>UI: Enter lyrics, depth, voice, audience, language, and lenses
   UI->>Store: Autosave draft after edits
   User->>UI: Submit interpretation request
   UI->>UI: Validate non-empty lyrics and character limit
@@ -89,7 +89,7 @@ sequenceDiagram
 
 ```mermaid
 flowchart TD
-  form["Composer State<br/>Title, artist, lyrics, depth, voice, lenses"]
+  form["Composer State<br/>Title, artist, lyrics, depth, voice, audience, language, lenses"]
   draft["Draft Autosave<br/>lyriclens:draft:v2"]
   submit["Interpretation Submit"]
   result["Result State<br/>Structured interpretation"]
@@ -120,6 +120,7 @@ flowchart TD
 - Analysis presets for balanced, close-read, classroom, and cautious interpretation modes.
 - Explanation depth selector with `Plain`, `Deep`, and `Cautious` modes.
 - Response voice selector with neutral, literary, direct, and classroom modes.
+- Target audience selector for listener, student, songwriter, and critic interpretations.
 - Output language selector for English, Spanish, French, German, and Urdu interpretations.
 - Interpretation lens selector for themes, craft, context, and ambiguity.
 - Built-in original demo lyric for quick app testing.
@@ -133,7 +134,7 @@ flowchart TD
 - Pinned history entries that stay above regular recents and survive clearing unpinned history.
 - Filterable and searchable interpretation history.
 - History import and export for backing up local saved interpretations.
-- Result metadata snapshots for title, artist, depth, voice, lenses, and lyric stats.
+- Result metadata snapshots for title, artist, depth, voice, audience, language, lenses, and lyric stats.
 - Clear-all recent history action.
 - Search, jump controls, collapsible sections, and expand/collapse-all actions for long interpretations.
 - Per-section copy actions for grabbing one interpretation section at a time.
@@ -220,10 +221,10 @@ The `netlify.toml` file already contains the build and function configuration, s
    - JSON body
    - required `lyrics`
    - maximum lyric length
-   - selected response voice and interpretation lenses
+   - selected response voice, target audience, output language, and interpretation lenses
    - bounded context notes
    - presence of `OPENAI_API_KEY`
-5. The function sends the prompt, context notes, depth, response voice, and selected lenses to OpenAI with a JSON Schema response format.
+5. The function sends the prompt, context notes, depth, response voice, target audience, output language, and selected lenses to OpenAI with a JSON Schema response format.
 6. The function parses the model output and returns:
 
 ```json
@@ -249,7 +250,7 @@ The server prompt tells the assistant to:
 - Avoid inventing facts.
 - Mark uncertain references as uncertain.
 - Explain slang, cultural references, double meanings, artist context, tone, and likely intent.
-- Follow the selected response voice while keeping claims grounded.
+- Follow the selected response voice and target audience while keeping claims grounded.
 - Prioritize the selected interpretation lenses while still filling all sections.
 - Use short hints rather than long lyric quotations when discussing specific lines.
 
@@ -266,10 +267,11 @@ The frontend keeps the user workflow simple:
 - Empty lyrics disable the submit button.
 - Demo lyrics can populate the composer without uploading a file.
 - Context notes can add album, genre, release, or personal context without mixing that text into the lyrics box.
-- Analysis presets update depth, response voice, and interpretation lenses together.
+- Analysis presets update depth, response voice, target audience, and interpretation lenses together.
 - Section-template buttons insert common lyric headers into the lyrics box.
 - Lyric quality hints update locally before submission and do not require an API request.
 - The response voice selector changes the explanation style sent to the API.
+- The target audience selector tunes how examples, craft notes, and uncertainty are framed.
 - The output language selector asks the API to return the structured interpretation in the selected language.
 - Lyric stats update as the user types, including detected bracketed sections and estimated read time.
 - A character-limit meter mirrors the server-side 24,000-character maximum and disables submission when exceeded.

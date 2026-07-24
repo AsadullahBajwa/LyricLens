@@ -5,6 +5,7 @@ const MAX_NOTES_CHARS = 2000;
 const OPENAI_TIMEOUT_MS = clampNumber(Number(process.env.OPENAI_TIMEOUT_MS), 5000, 120000, 45000);
 const ALLOWED_FOCUS = ["themes", "craft", "context", "ambiguity"];
 const ALLOWED_TONES = ["neutral", "literary", "direct", "classroom"];
+const ALLOWED_AUDIENCES = ["listener", "student", "songwriter", "critic"];
 const ALLOWED_LANGUAGES = ["english", "spanish", "french", "german", "urdu"];
 
 const focusGuidance = {
@@ -19,6 +20,13 @@ const toneGuidance = {
   literary: "more attention to imagery, symbolism, and craft without overclaiming",
   direct: "concise, practical explanation with minimal flourish",
   classroom: "teacherly explanation that defines concepts and keeps reasoning explicit"
+};
+
+const audienceGuidance = {
+  listener: "a general music listener who wants the core meaning and emotional stakes",
+  student: "a student who benefits from definitions, examples, and explicit reasoning",
+  songwriter: "a songwriter who wants craft, structure, and revision-aware observations",
+  critic: "a careful critic who values evidence, uncertainty, and alternate readings"
 };
 
 const languageGuidance = {
@@ -162,6 +170,7 @@ export async function handler(event) {
     ? payload.detail
     : "plain";
   const tone = normalizeTone(payload.tone);
+  const audience = normalizeAudience(payload.audience);
   const language = normalizeLanguage(payload.language);
   const focus = normalizeFocus(payload.focus);
 
@@ -187,6 +196,7 @@ export async function handler(event) {
     notes ? `User-provided context notes: ${notes}` : "User-provided context notes: not provided",
     `Explanation depth: ${detail}`,
     `Response voice: ${toneGuidance[tone]}`,
+    `Target audience: ${audienceGuidance[audience]}`,
     `Output language: ${languageGuidance[language]}`,
     `Interpretation lenses: ${focus.map((item) => focusGuidance[item]).join("; ")}`,
     "",
@@ -291,6 +301,10 @@ function normalizeFocus(value) {
 
 function normalizeTone(value) {
   return ALLOWED_TONES.includes(value) ? value : "neutral";
+}
+
+function normalizeAudience(value) {
+  return ALLOWED_AUDIENCES.includes(value) ? value : "listener";
 }
 
 function normalizeLanguage(value) {
