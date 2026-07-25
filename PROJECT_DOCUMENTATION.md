@@ -187,6 +187,12 @@ Build the production app:
 npm run build
 ```
 
+Run the automated Netlify Function tests:
+
+```bash
+npm test
+```
+
 Preview the built app:
 
 ```bash
@@ -334,6 +340,7 @@ Try a shorter excerpt, choose a lower detail setting, or increase `OPENAI_TIMEOU
 Before deployment or after major changes:
 
 ```bash
+npm test
 npm run build
 npm audit
 node --check netlify/functions/interpret.mjs

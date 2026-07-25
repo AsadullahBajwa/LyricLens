@@ -40,6 +40,12 @@ For the full architecture, deployment, API flow, and troubleshooting notes, see 
    npm run dev:netlify
    ```
 
+4. Run automated tests:
+
+   ```bash
+   npm test
+   ```
+
 ## Deploy to Netlify
 
 1. Push this folder to a Git repository.
