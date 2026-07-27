@@ -18,6 +18,8 @@ The model instructions intentionally avoid long lyric quotations, unsupported cl
 
 The app also keeps the user workflow local-first: drafts and recent interpretations are saved in browser storage, exports are generated client-side, and the API key remains isolated in the Netlify Function.
 
+For end-user operating instructions, see [USER_MANUAL.md](USER_MANUAL.md).
+
 ## Application Architecture
 
 LyricLens has two main parts:
@@ -28,6 +30,7 @@ LyricLens has two main parts:
 | Styling | `src/styles.css` | Defines the responsive interface, color system, layout, controls, and result section styling. |
 | Static artwork | `public/lyriclens-studio.png` | Local visual asset used by the app so deployment does not depend on remote image hosting. |
 | Netlify function | `netlify/functions/interpret.mjs` | Server-side API route that calls OpenAI without exposing the API key in the browser. |
+| User manual | `USER_MANUAL.md` | User-facing workflow guide for operating LyricLens. |
 | Netlify config | `netlify.toml` | Defines build output, functions directory, and `/api/*` redirect behavior. |
 | Vite config | `vite.config.js` | Enables the React plugin for the Vite build. |
 
