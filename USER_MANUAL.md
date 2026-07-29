@@ -160,8 +160,11 @@ Paste lyrics into the main `Lyrics` box. Use section headers to improve verse-by
 The quick section buttons insert common headers:
 
 - Verse
+- Pre-Chorus
 - Chorus
 - Bridge
+- Hook
+- Outro
 
 ### Lyric Quality Hints
 

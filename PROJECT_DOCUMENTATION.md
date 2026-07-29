@@ -128,7 +128,7 @@ flowchart TD
 - Output language selector for English, Spanish, French, German, and Urdu interpretations.
 - Interpretation lens selector for themes, craft, context, and ambiguity.
 - Built-in original demo lyric for quick app testing.
-- Quick section-template insert buttons for verse, chorus, and bridge headers.
+- Quick section-template insert buttons for verse, pre-chorus, chorus, bridge, hook, and outro headers.
 - Local lyric quality hints for structure, excerpt length, long lines, and repetition.
 - Lyric formatting cleanup plus character, word, line, section, unique-word, and read-time stats.
 - Private mode that pauses local draft autosave and skips new history saves.
@@ -278,7 +278,7 @@ The frontend keeps the user workflow simple:
 - Demo lyrics can populate the composer without uploading a file.
 - Context notes can add album, genre, release, or personal context without mixing that text into the lyrics box.
 - Analysis presets update depth, response length, response voice, target audience, and interpretation lenses together.
-- Section-template buttons insert common lyric headers into the lyrics box.
+- Section-template buttons insert common lyric headers into the lyrics box, including verse, pre-chorus, chorus, bridge, hook, and outro.
 - Lyric quality hints update locally before submission and do not require an API request.
 - The response length selector controls how compact or expansive each generated section should be.
 - The response voice selector changes the explanation style sent to the API.

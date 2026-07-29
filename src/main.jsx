@@ -146,7 +146,14 @@ const analysisPresets = [
   }
 ];
 
-const sectionTemplates = ["Verse", "Chorus", "Bridge"];
+const sectionTemplates = [
+  { id: "verse", label: "Verse", snippet: "[Verse]\n" },
+  { id: "pre-chorus", label: "Pre", snippet: "[Pre-Chorus]\n" },
+  { id: "chorus", label: "Chorus", snippet: "[Chorus]\n" },
+  { id: "bridge", label: "Bridge", snippet: "[Bridge]\n" },
+  { id: "hook", label: "Hook", snippet: "[Hook]\n" },
+  { id: "outro", label: "Outro", snippet: "[Outro]\n" }
+];
 
 const sectionConfig = [
   ["overallMeaning", "1. Overall Meaning"],
@@ -441,7 +448,7 @@ function App() {
     setForm((current) => {
       const lyrics = current.lyrics.trimEnd();
       const separator = lyrics ? "\n\n" : "";
-      return { ...current, lyrics: `${lyrics}${separator}[${template}]\n` };
+      return { ...current, lyrics: `${lyrics}${separator}${template.snippet}` };
     });
   }
 
@@ -801,13 +808,13 @@ function App() {
               <div className="template-row" aria-label="Lyric section templates">
                 {sectionTemplates.map((template) => (
                   <button
-                    key={template}
+                    key={template.id}
                     type="button"
                     className="template-button"
                     onClick={() => insertSectionTemplate(template)}
                   >
                     <Plus size={14} />
-                    <span>{template}</span>
+                    <span>{template.label}</span>
                   </button>
                 ))}
               </div>
