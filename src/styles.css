@@ -679,9 +679,9 @@ button:disabled {
   box-shadow: none;
 }
 
-.history-filter {
+.history-filter,
+.history-sort {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 6px;
   padding: 5px;
   border: 1px solid var(--line);
@@ -689,7 +689,16 @@ button:disabled {
   background: #f6f8f6;
 }
 
-.history-filter button {
+.history-filter {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.history-sort {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.history-filter button,
+.history-sort button {
   min-height: 32px;
   border-radius: 6px;
   color: var(--muted);
@@ -699,7 +708,8 @@ button:disabled {
   font-weight: 900;
 }
 
-.history-filter button.active {
+.history-filter button.active,
+.history-sort button.active {
   color: #ffffff;
   background: var(--teal);
 }

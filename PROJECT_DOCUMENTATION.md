@@ -136,7 +136,7 @@ flowchart TD
 - Copyable and downloadable draft snapshots for moving the current lyric workspace before interpretation.
 - Recent interpretation history with one-click restore and removal.
 - Pinned history entries that stay above regular recents and survive clearing unpinned history.
-- Filterable and searchable interpretation history.
+- Sortable, filterable, and searchable interpretation history.
 - History import and export for backing up local saved interpretations.
 - Result metadata snapshots for title, artist, depth, length, voice, audience, language, lenses, and lyric stats.
 - Clear-all recent history action.
@@ -295,7 +295,7 @@ The frontend keeps the user workflow simple:
 - Successful results render as separate sections.
 - Completed results show the saved interpretation settings used for that run.
 - Recent results are saved locally and can be restored from the output panel.
-- Recent history can be filtered, searched, pinned, imported, exported, removed, or cleared from the output panel.
+- Recent history can be sorted, filtered, searched, pinned, imported, exported, removed, or cleared from the output panel.
 - Result search filters sections, reports the matching section count, can be cleared in place, and highlights the first match in each field.
 - Section number buttons jump to the matching output section.
 - Section headers collapse or expand long explanations, with bulk expand and collapse controls.

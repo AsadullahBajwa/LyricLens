@@ -155,6 +155,12 @@ const sectionTemplates = [
   { id: "outro", label: "Outro", snippet: "[Outro]\n" }
 ];
 
+const historySortOptions = [
+  ["recent", "Recent"],
+  ["title", "Title"],
+  ["words", "Words"]
+];
+
 const sectionConfig = [
   ["overallMeaning", "1. Overall Meaning"],
   ["backgroundContext", "2. Background Context"],
@@ -177,6 +183,7 @@ function App() {
   const [history, setHistory] = useState(loadHistory);
   const [historyFilter, setHistoryFilter] = useState("all");
   const [historyQuery, setHistoryQuery] = useState("");
+  const [historySort, setHistorySort] = useState("recent");
   const [privateMode, setPrivateMode] = useState(() =>
     Boolean(readStorage(STORAGE_KEYS.preferences)?.privateMode)
   );
@@ -1015,11 +1022,13 @@ function App() {
             history={history}
             historyFilter={historyFilter}
             historyQuery={historyQuery}
+            historySort={historySort}
             onClear={clearHistory}
             onExport={exportHistory}
             onFilterChange={setHistoryFilter}
             onHistoryQueryChange={setHistoryQuery}
             onImport={() => historyInput.current?.click()}
+            onSortChange={setHistorySort}
             onToggleFavorite={toggleFavoriteHistory}
             onRestore={restoreHistory}
             onRemove={removeHistoryEntry}
@@ -1163,20 +1172,25 @@ function HistoryPanel({
   history,
   historyFilter,
   historyQuery,
+  historySort,
   onClear,
   onExport,
   onFilterChange,
   onHistoryQueryChange,
   onImport,
+  onSortChange,
   onToggleFavorite,
   onRestore,
   onRemove
 }) {
   if (!history.length) return null;
 
-  const visibleHistory = history.filter(
-    (entry) =>
-      (historyFilter === "all" || entry.favorite) && historyMatches(entry, historyQuery)
+  const visibleHistory = sortHistoryForView(
+    history.filter(
+      (entry) =>
+        (historyFilter === "all" || entry.favorite) && historyMatches(entry, historyQuery)
+    ),
+    historySort
   );
 
   return (
@@ -1239,13 +1253,31 @@ function HistoryPanel({
           </button>
         ))}
       </div>
+      <div className="history-sort" aria-label="History sort">
+        {historySortOptions.map(([sort, label]) => (
+          <button
+            key={sort}
+            type="button"
+            className={historySort === sort ? "active" : ""}
+            onClick={() => onSortChange(sort)}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
       <div className="history-list">
         {visibleHistory.map((entry) => (
           <div className="history-item" key={entry.id}>
             <button type="button" className="history-main" onClick={() => onRestore(entry)}>
               <strong>{entry.title || "Untitled lyrics"}</strong>
               <span>
-                {[entry.artist, capitalize(entry.detail || "plain"), getToneLabel(entry.tone), formatTime(entry.createdAt)]
+                {[
+                  entry.artist,
+                  capitalize(entry.detail || "plain"),
+                  getToneLabel(entry.tone),
+                  `${entry.stats?.words?.toLocaleString() || 0} words`,
+                  formatTime(entry.createdAt)
+                ]
                   .filter(Boolean)
                   .join(" / ")}
               </span>
@@ -1856,12 +1888,40 @@ function sortHistory(entries) {
   return [...entries].sort(compareHistoryEntries).slice(0, MAX_HISTORY_ITEMS);
 }
 
+function sortHistoryForView(entries, sortMode) {
+  return [...entries].sort((left, right) => compareHistoryForView(left, right, sortMode));
+}
+
+function compareHistoryForView(left, right, sortMode) {
+  if (Boolean(left.favorite) !== Boolean(right.favorite)) {
+    return left.favorite ? -1 : 1;
+  }
+
+  if (sortMode === "title") {
+    const titleCompare = getHistoryTitle(left).localeCompare(getHistoryTitle(right), undefined, {
+      sensitivity: "base"
+    });
+    return titleCompare || compareHistoryEntries(left, right);
+  }
+
+  if (sortMode === "words") {
+    const wordCompare = (right.stats?.words || 0) - (left.stats?.words || 0);
+    return wordCompare || compareHistoryEntries(left, right);
+  }
+
+  return compareHistoryEntries(left, right);
+}
+
 function compareHistoryEntries(left, right) {
   if (Boolean(left.favorite) !== Boolean(right.favorite)) {
     return left.favorite ? -1 : 1;
   }
 
   return new Date(right.createdAt || 0).getTime() - new Date(left.createdAt || 0).getTime();
+}
+
+function getHistoryTitle(entry) {
+  return `${entry.title || "Untitled lyrics"} ${entry.artist || ""}`.trim();
 }
 
 function makeFilename(form, suffix) {
