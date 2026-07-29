@@ -9,7 +9,7 @@ Use this manual when you want to operate the app. For deployment, architecture, 
 1. Open LyricLens in your browser.
 2. Paste lyrics into the `Lyrics` field, or use the demo or upload controls.
 3. Optionally enter the song title, artist, and context notes.
-4. Choose preset, depth, voice, audience, output language, and interpretation lenses.
+4. Choose preset, depth, response length, voice, audience, output language, and interpretation lenses.
 5. Select `Interpret`.
 6. Read, search, copy, download, print, or save the interpretation from the output panel.
 
@@ -20,7 +20,7 @@ flowchart TD
   start["Start"]
   lyrics["Paste, upload, or load demo lyrics"]
   context["Add optional title, artist, and context notes"]
-  settings["Choose depth, voice, audience, language, and lenses"]
+  settings["Choose depth, length, voice, audience, language, and lenses"]
   submit["Interpret lyrics"]
   output["Review structured interpretation"]
   actions["Copy, download, print, search, collapse, or restore history"]
@@ -90,6 +90,14 @@ You can still adjust individual settings after choosing a preset.
 | Plain | You want a clear, compact explanation. |
 | Deep | You want more detail and closer reading. |
 | Cautious | You want the app to avoid overclaiming when context is limited. |
+
+### Length
+
+| Length | Use When |
+| --- | --- |
+| Brief | You want high-signal sections with minimal elaboration. |
+| Standard | You want a balanced amount of explanation. |
+| Expanded | You want richer examples, alternate readings, and craft notes where supported. |
 
 ### Voice
 
@@ -193,6 +201,7 @@ Drafts save automatically in browser storage when private mode is off. A draft c
 - Artist
 - Context notes
 - Depth
+- Response length
 - Voice
 - Audience
 - Output language
@@ -225,7 +234,7 @@ After a successful request, LyricLens returns seven sections:
 6. Ambiguous lines
 7. Final takeaway
 
-The output panel also shows metadata for the completed result, including title, artist, depth, voice, audience, output language, selected lenses, word count, and section count.
+The output panel also shows metadata for the completed result, including title, artist, depth, response length, voice, audience, output language, selected lenses, word count, and section count.
 
 ## Output Actions
 

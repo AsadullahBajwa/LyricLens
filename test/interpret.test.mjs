@@ -98,6 +98,7 @@ test("sends normalized interpretation settings to OpenAI", async () => {
     notes: "Synth-pop demo context",
     lyrics: "[Verse]\nThe city hummed in borrowed blue",
     detail: "deep",
+    length: "expanded",
     tone: "classroom",
     audience: "songwriter",
     language: "german",
@@ -115,6 +116,7 @@ test("sends normalized interpretation settings to OpenAI", async () => {
   assert.equal(capturedRequest.text.format.name, "lyric_interpretation");
   assert.equal(capturedRequest.text.format.strict, true);
   assert.match(capturedRequest.input, /Song title: Neon Harbor/);
+  assert.match(capturedRequest.input, /Response length: expanded detail/);
   assert.match(capturedRequest.input, /Response voice: teacherly explanation/);
   assert.match(capturedRequest.input, /Target audience: a songwriter/);
   assert.match(capturedRequest.input, /Output language: German/);
@@ -134,6 +136,7 @@ test("falls back to safe defaults for invalid selector values", async () => {
   const response = await post({
     lyrics: "Small lyric fragment",
     detail: "verbose",
+    length: "novel",
     tone: "dramatic",
     audience: "producer",
     language: "klingon",
@@ -143,6 +146,7 @@ test("falls back to safe defaults for invalid selector values", async () => {
   assert.equal(response.statusCode, 200);
   assert.deepEqual(capturedRequest.reasoning, { effort: "low" });
   assert.match(capturedRequest.input, /Explanation depth: plain/);
+  assert.match(capturedRequest.input, /Response length: moderate detail/);
   assert.match(capturedRequest.input, /Response voice: clear, balanced/);
   assert.match(capturedRequest.input, /Target audience: a general music listener/);
   assert.match(capturedRequest.input, /Output language: English/);

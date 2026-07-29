@@ -5,6 +5,7 @@ const MAX_NOTES_CHARS = 2000;
 const OPENAI_TIMEOUT_MS = clampNumber(Number(process.env.OPENAI_TIMEOUT_MS), 5000, 120000, 45000);
 const ALLOWED_FOCUS = ["themes", "craft", "context", "ambiguity"];
 const ALLOWED_TONES = ["neutral", "literary", "direct", "classroom"];
+const ALLOWED_LENGTHS = ["brief", "standard", "expanded"];
 const ALLOWED_AUDIENCES = ["listener", "student", "songwriter", "critic"];
 const ALLOWED_LANGUAGES = ["english", "spanish", "french", "german", "urdu"];
 
@@ -20,6 +21,12 @@ const toneGuidance = {
   literary: "more attention to imagery, symbolism, and craft without overclaiming",
   direct: "concise, practical explanation with minimal flourish",
   classroom: "teacherly explanation that defines concepts and keeps reasoning explicit"
+};
+
+const lengthGuidance = {
+  brief: "brief, high-signal answers with one or two compact points per list section",
+  standard: "moderate detail with enough evidence to make each section useful",
+  expanded: "expanded detail with richer examples, alternate readings, and craft notes where supported"
 };
 
 const audienceGuidance = {
@@ -169,6 +176,7 @@ export async function handler(event) {
   const detail = ["plain", "deep", "cautious"].includes(payload.detail)
     ? payload.detail
     : "plain";
+  const length = normalizeLength(payload.length);
   const tone = normalizeTone(payload.tone);
   const audience = normalizeAudience(payload.audience);
   const language = normalizeLanguage(payload.language);
@@ -195,6 +203,7 @@ export async function handler(event) {
     artist ? `Artist: ${artist}` : "Artist: not provided",
     notes ? `User-provided context notes: ${notes}` : "User-provided context notes: not provided",
     `Explanation depth: ${detail}`,
+    `Response length: ${lengthGuidance[length]}`,
     `Response voice: ${toneGuidance[tone]}`,
     `Target audience: ${audienceGuidance[audience]}`,
     `Output language: ${languageGuidance[language]}`,
@@ -301,6 +310,10 @@ function normalizeFocus(value) {
 
 function normalizeTone(value) {
   return ALLOWED_TONES.includes(value) ? value : "neutral";
+}
+
+function normalizeLength(value) {
+  return ALLOWED_LENGTHS.includes(value) ? value : "standard";
 }
 
 function normalizeAudience(value) {

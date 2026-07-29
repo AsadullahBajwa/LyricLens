@@ -43,6 +43,7 @@ const emptyForm = {
   notes: "",
   lyrics: "",
   detail: "plain",
+  length: "standard",
   tone: "neutral",
   audience: "listener",
   language: "english",
@@ -92,6 +93,12 @@ const audienceOptions = [
   ["critic", "Critic"]
 ];
 
+const lengthOptions = [
+  ["brief", "Brief"],
+  ["standard", "Standard"],
+  ["expanded", "Expanded"]
+];
+
 const languageOptions = [
   ["english", "English"],
   ["spanish", "Spanish"],
@@ -105,6 +112,7 @@ const analysisPresets = [
     id: "balanced",
     label: "Balanced",
     detail: "plain",
+    length: "standard",
     tone: "neutral",
     audience: "listener",
     focus: ["themes", "context"]
@@ -113,6 +121,7 @@ const analysisPresets = [
     id: "close-read",
     label: "Close Read",
     detail: "deep",
+    length: "expanded",
     tone: "literary",
     audience: "songwriter",
     focus: ["themes", "craft", "ambiguity"]
@@ -121,6 +130,7 @@ const analysisPresets = [
     id: "classroom",
     label: "Classroom",
     detail: "plain",
+    length: "standard",
     tone: "classroom",
     audience: "student",
     focus: ["themes", "context", "craft"]
@@ -129,6 +139,7 @@ const analysisPresets = [
     id: "cautious",
     label: "Cautious",
     detail: "cautious",
+    length: "brief",
     tone: "direct",
     audience: "critic",
     focus: ["context", "ambiguity"]
@@ -208,6 +219,7 @@ function App() {
       const savedAt = new Date().toISOString();
       saveStorage(STORAGE_KEYS.draft, {
         ...form,
+        length: normalizeLength(form.length),
         tone: normalizeTone(form.tone),
         audience: normalizeAudience(form.audience),
         language: normalizeLanguage(form.language),
@@ -267,6 +279,7 @@ function App() {
     setForm((current) => ({
       ...current,
       detail: preset.detail,
+      length: preset.length,
       tone: preset.tone,
       audience: preset.audience,
       focus: normalizeFocus(preset.focus)
@@ -300,6 +313,7 @@ function App() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...form,
+          length: normalizeLength(form.length),
           tone: normalizeTone(form.tone),
           audience: normalizeAudience(form.audience),
           language: normalizeLanguage(form.language),
@@ -405,6 +419,7 @@ function App() {
     const savedAt = new Date().toISOString();
     saveStorage(STORAGE_KEYS.draft, {
       ...form,
+      length: normalizeLength(form.length),
       tone: normalizeTone(form.tone),
       audience: normalizeAudience(form.audience),
       language: normalizeLanguage(form.language),
@@ -435,6 +450,7 @@ function App() {
       ...emptyForm,
       ...demoLyrics,
       detail: "plain",
+      length: "standard",
       tone: "literary",
       audience: "listener",
       language: "english",
@@ -499,6 +515,7 @@ function App() {
       notes: entry.notes || "",
       lyrics: entry.lyrics || "",
       detail: entry.detail || "plain",
+      length: normalizeLength(entry.length),
       tone: normalizeTone(entry.tone),
       audience: normalizeAudience(entry.audience),
       language: normalizeLanguage(entry.language),
@@ -662,6 +679,7 @@ function App() {
             {analysisPresets.map((preset) => {
               const active =
                 form.detail === preset.detail &&
+                form.length === preset.length &&
                 form.tone === preset.tone &&
                 form.audience === preset.audience &&
                 sameSet(normalizeFocus(form.focus), preset.focus);
@@ -691,6 +709,22 @@ function App() {
                   onChange={(event) => updateField("detail", event.target.value)}
                 />
                 <span>{capitalize(option)}</span>
+              </label>
+            ))}
+          </fieldset>
+
+          <fieldset className="segmented">
+            <legend>Length</legend>
+            {lengthOptions.map(([option, label]) => (
+              <label key={option} className={form.length === option ? "active" : ""}>
+                <input
+                  type="radio"
+                  name="length"
+                  value={option}
+                  checked={form.length === option}
+                  onChange={(event) => updateField("length", event.target.value)}
+                />
+                <span>{label}</span>
               </label>
             ))}
           </fieldset>
@@ -1243,6 +1277,7 @@ function ResultMeta({ meta }) {
       <span>{meta.title || "Untitled lyrics"}</span>
       <span>{meta.artist || "Unknown artist"}</span>
       <span>{capitalize(meta.detail || "plain")}</span>
+      <span>{getLengthLabel(meta.length)}</span>
       <span>{getToneLabel(meta.tone)}</span>
       <span>{getAudienceLabel(meta.audience)}</span>
       <span>{getLanguageLabel(meta.language)}</span>
@@ -1416,6 +1451,7 @@ function resultToText(result, meta) {
         `Artist: ${meta.artist || "Unknown artist"}`,
         meta.notes ? `Context notes: ${meta.notes}` : "",
         `Depth: ${capitalize(meta.detail || "plain")}`,
+        `Length: ${getLengthLabel(meta.length)}`,
         `Voice: ${getToneLabel(meta.tone)}`,
         `Audience: ${getAudienceLabel(meta.audience)}`,
         `Language: ${getLanguageLabel(meta.language)}`,
@@ -1436,6 +1472,7 @@ function draftToText(form, stats) {
     `Artist: ${form.artist || "Unknown artist"}`,
     form.notes ? `Context notes: ${form.notes}` : "",
     `Depth: ${capitalize(form.detail || "plain")}`,
+    `Length: ${getLengthLabel(form.length)}`,
     `Voice: ${getToneLabel(form.tone)}`,
     `Audience: ${getAudienceLabel(form.audience)}`,
     `Language: ${getLanguageLabel(form.language)}`,
@@ -1476,6 +1513,7 @@ function resultToMarkdown(result, context) {
     .join(" ");
   const details = [
     `**Depth:** ${capitalize(context.detail || "plain")}`,
+    `**Length:** ${getLengthLabel(context.length)}`,
     `**Voice:** ${getToneLabel(context.tone)}`,
     `**Audience:** ${getAudienceLabel(context.audience)}`,
     `**Language:** ${getLanguageLabel(context.language)}`,
@@ -1522,6 +1560,7 @@ function resultToJson(result, context) {
         artist: context.artist || "",
         notes: context.notes || "",
         detail: context.detail || "plain",
+        length: normalizeLength(context.length),
         tone: normalizeTone(context.tone),
         audience: normalizeAudience(context.audience),
         language: normalizeLanguage(context.language),
@@ -1633,6 +1672,7 @@ function historyMatches(entry, query) {
     entry.artist,
     entry.notes,
     entry.detail,
+    getLengthLabel(entry.length),
     getToneLabel(entry.tone),
     getAudienceLabel(entry.audience),
     normalizeFocus(entry.focus).map(getFocusLabel).join(" ")
@@ -1656,6 +1696,7 @@ function createInitialForm() {
   return {
     ...emptyForm,
     ...draft,
+    length: normalizeLength(draft.length),
     tone: normalizeTone(draft.tone),
     audience: normalizeAudience(draft.audience),
     language: normalizeLanguage(draft.language),
@@ -1688,6 +1729,11 @@ function normalizeTone(value) {
   return allowed.includes(value) ? value : emptyForm.tone;
 }
 
+function normalizeLength(value) {
+  const allowed = lengthOptions.map(([option]) => option);
+  return allowed.includes(value) ? value : emptyForm.length;
+}
+
 function normalizeAudience(value) {
   const allowed = audienceOptions.map(([option]) => option);
   return allowed.includes(value) ? value : emptyForm.audience;
@@ -1710,6 +1756,7 @@ function createResultMeta(source, createdAt = new Date().toISOString()) {
     artist: source.artist?.trim() || "",
     notes: source.notes?.trim() || "",
     detail: source.detail || "plain",
+    length: normalizeLength(source.length),
     tone: normalizeTone(source.tone),
     audience: normalizeAudience(source.audience),
     language: normalizeLanguage(source.language),
@@ -1725,6 +1772,7 @@ function hydrateResultMeta(entry) {
     artist: entry.artist || "",
     notes: entry.notes || "",
     detail: entry.detail || "plain",
+    length: normalizeLength(entry.length),
     tone: normalizeTone(entry.tone),
     audience: normalizeAudience(entry.audience),
     language: normalizeLanguage(entry.language),
@@ -1736,6 +1784,10 @@ function hydrateResultMeta(entry) {
 
 function getToneLabel(value) {
   return toneOptions.find(([option]) => option === normalizeTone(value))?.[1] || "Neutral";
+}
+
+function getLengthLabel(value) {
+  return lengthOptions.find(([option]) => option === normalizeLength(value))?.[1] || "Standard";
 }
 
 function getAudienceLabel(value) {
@@ -1768,6 +1820,7 @@ function normalizeHistoryEntry(entry) {
     notes: entry.notes || "",
     lyrics: entry.lyrics || "",
     detail: entry.detail || "plain",
+    length: normalizeLength(entry.length),
     tone: normalizeTone(entry.tone),
     audience: normalizeAudience(entry.audience),
     language: normalizeLanguage(entry.language),
