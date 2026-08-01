@@ -78,6 +78,26 @@ test("validates invalid JSON, empty lyrics, lyric length, and note length", asyn
   assert.match(parseBody(longNotes).error, /Context notes are too long/);
 });
 
+test("accepts boundary-sized lyrics and context notes", async () => {
+  process.env.OPENAI_API_KEY = "test-key";
+  let capturedRequest = null;
+
+  globalThis.fetch = async (_, options) => {
+    capturedRequest = JSON.parse(options.body);
+    return openAiJsonResponse({ output_text: JSON.stringify(fixtureInterpretation) });
+  };
+
+  const response = await post({
+    lyrics: "a".repeat(24000),
+    notes: "n".repeat(2000)
+  });
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(parseBody(response).interpretation.overallMeaning, fixtureInterpretation.overallMeaning);
+  assert.match(capturedRequest.input, /^a{24000}$/m);
+  assert.match(capturedRequest.input, /^User-provided context notes: n{2000}$/m);
+});
+
 test("sends normalized interpretation settings to OpenAI", async () => {
   process.env.OPENAI_API_KEY = "test-key";
   process.env.OPENAI_MODEL = "test-model";
@@ -122,6 +142,39 @@ test("sends normalized interpretation settings to OpenAI", async () => {
   assert.match(capturedRequest.input, /Output language: German/);
   assert.match(capturedRequest.input, /Interpretation lenses: imagery, structure, rhyme/);
   assert.doesNotMatch(capturedRequest.input, /unknown/);
+});
+
+test("uses the default model and trims submitted metadata", async () => {
+  process.env.OPENAI_API_KEY = "test-key";
+  delete process.env.OPENAI_MODEL;
+  let capturedRequest = null;
+
+  globalThis.fetch = async (_, options) => {
+    capturedRequest = JSON.parse(options.body);
+    return openAiJsonResponse({ output_text: JSON.stringify(fixtureInterpretation) });
+  };
+
+  const response = await post({
+    title: "  Spaced Title  ",
+    artist: "  Spaced Artist  ",
+    notes: "  Trim this note  ",
+    lyrics: "  [Verse]\ntrimmed lyric  ",
+    detail: "cautious",
+    length: "brief",
+    tone: "direct",
+    audience: "critic",
+    language: "urdu",
+    focus: ["ambiguity"]
+  });
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(capturedRequest.model, "gpt-5.5");
+  assert.deepEqual(capturedRequest.reasoning, { effort: "low" });
+  assert.match(capturedRequest.input, /^Song title: Spaced Title$/m);
+  assert.match(capturedRequest.input, /^Artist: Spaced Artist$/m);
+  assert.match(capturedRequest.input, /^User-provided context notes: Trim this note$/m);
+  assert.match(capturedRequest.input, /^Output language: Urdu$/m);
+  assert.match(capturedRequest.input, /^Lyrics:\n\[Verse\]\ntrimmed lyric$/m);
 });
 
 test("falls back to safe defaults for invalid selector values", async () => {
@@ -172,6 +225,20 @@ test("extracts nested Responses API output text", async () => {
   assert.deepEqual(parseBody(response).interpretation, fixtureInterpretation);
 });
 
+test("reports a clear server error when Responses output text is missing", async () => {
+  process.env.OPENAI_API_KEY = "test-key";
+  globalThis.fetch = async () =>
+    openAiJsonResponse({
+      output: [{ type: "message", content: [{ type: "summary_text", text: "not usable" }] }]
+    });
+
+  const response = await post({ lyrics: "Missing output shape" });
+  const body = parseBody(response);
+
+  assert.equal(response.statusCode, 500);
+  assert.equal(body.error, "The model response did not contain output text.");
+});
+
 test("returns clear errors for OpenAI failures and invalid model JSON", async () => {
   process.env.OPENAI_API_KEY = "test-key";
   globalThis.fetch = async () =>
@@ -186,6 +253,32 @@ test("returns clear errors for OpenAI failures and invalid model JSON", async ()
   const invalidJson = await post({ lyrics: "A valid line" });
   assert.equal(invalidJson.statusCode, 502);
   assert.equal(parseBody(invalidJson).error, "The model response was not valid JSON.");
+});
+
+test("uses fallback error text for upstream failures without a message", async () => {
+  process.env.OPENAI_API_KEY = "test-key";
+  globalThis.fetch = async () => openAiJsonResponse({}, { ok: false, status: 503 });
+
+  const response = await post({ lyrics: "A valid line" });
+  const body = parseBody(response);
+
+  assert.equal(response.statusCode, 503);
+  assert.equal(body.error, "OpenAI request failed.");
+});
+
+test("returns timeout response when the upstream request aborts", async () => {
+  process.env.OPENAI_API_KEY = "test-key";
+  globalThis.fetch = async () => {
+    const error = new Error("aborted");
+    error.name = "AbortError";
+    throw error;
+  };
+
+  const response = await post({ lyrics: "A valid line" });
+  const body = parseBody(response);
+
+  assert.equal(response.statusCode, 504);
+  assert.match(body.error, /timed out/);
 });
 
 function post(body) {
