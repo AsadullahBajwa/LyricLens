@@ -244,6 +244,7 @@ The output panel also shows metadata for the completed result, including title, 
 | Button | Action |
 | --- | --- |
 | Copy | Copies the full interpretation as plain text. |
+| Copy Markdown | Copies the full interpretation as Markdown. |
 | Download TXT | Downloads the interpretation as a `.txt` file. |
 | Download Markdown | Downloads the interpretation as a `.md` file. |
 | Download JSON | Downloads metadata and structured interpretation data as `.json`. |

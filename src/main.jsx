@@ -177,6 +177,7 @@ function App() {
   const [error, setError] = useState("");
   const [status, setStatus] = useState("idle");
   const [copied, setCopied] = useState(false);
+  const [copiedMarkdown, setCopiedMarkdown] = useState(false);
   const [copiedDraft, setCopiedDraft] = useState(false);
   const [copiedSection, setCopiedSection] = useState("");
   const [resultMeta, setResultMeta] = useState(null);
@@ -369,6 +370,13 @@ function App() {
     await navigator.clipboard.writeText(plainText);
     setCopied(true);
     window.setTimeout(() => setCopied(false), 1800);
+  }
+
+  async function copyMarkdownResult() {
+    if (!markdownText) return;
+    await navigator.clipboard.writeText(markdownText);
+    setCopiedMarkdown(true);
+    window.setTimeout(() => setCopiedMarkdown(false), 1800);
   }
 
   async function copyResultSection(sectionKey, title) {
@@ -974,6 +982,16 @@ function App() {
                 disabled={!result}
               >
                 {copied ? <Check size={18} /> : <Clipboard size={18} />}
+              </button>
+              <button
+                type="button"
+                className="icon-button"
+                aria-label="Copy markdown interpretation"
+                title="Copy markdown interpretation"
+                onClick={copyMarkdownResult}
+                disabled={!result}
+              >
+                {copiedMarkdown ? <Check size={18} /> : <FileText size={18} />}
               </button>
               <button
                 type="button"
