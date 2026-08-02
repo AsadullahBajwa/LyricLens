@@ -1278,6 +1278,17 @@ function HistoryPanel({
           onChange={(event) => onHistoryQueryChange(event.target.value)}
           placeholder="Search history"
         />
+        {historyQuery ? (
+          <button
+            type="button"
+            className="search-clear"
+            aria-label="Clear history search"
+            title="Clear history search"
+            onClick={() => onHistoryQueryChange("")}
+          >
+            <X size={14} />
+          </button>
+        ) : null}
       </label>
       <div className="history-filter" aria-label="History filter">
         {[

@@ -666,6 +666,8 @@ button:disabled {
 }
 
 .history-search input {
+  flex: 1;
+  min-width: 0;
   min-height: 34px;
   padding: 0;
   border: 0;

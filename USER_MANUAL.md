@@ -268,6 +268,7 @@ History features include:
 
 - Restore a previous interpretation.
 - Search history.
+- Clear the history search without changing saved entries.
 - Filter between all entries and pinned entries.
 - Sort history by recent activity, title, or lyric word count.
 - Pin important entries.
