@@ -274,6 +274,7 @@ History features include:
 - Remove one entry.
 - Clear unpinned entries.
 - Export history as JSON.
+- Export history as CSV.
 - Import a LyricLens history JSON file.
 
 Pinned entries stay above regular recent entries and survive the clear-unpinned action.
@@ -302,7 +303,9 @@ Use the output toolbar to export:
 
 ### Export History
 
-History export creates `lyriclens-history.json`, including an export timestamp and saved entries.
+History JSON export creates `lyriclens-history.json`, including an export timestamp and saved entries. Use it when you want a backup that can be imported back into LyricLens.
+
+History CSV export creates `lyriclens-history.csv` with song metadata, settings, pinned status, and lyric stats. Use it when you want to review saved interpretations in a spreadsheet.
 
 ## Keyboard Shortcuts
 

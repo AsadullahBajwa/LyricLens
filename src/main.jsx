@@ -585,6 +585,18 @@ function App() {
     URL.revokeObjectURL(url);
   }
 
+  function exportHistoryCsv() {
+    if (!history.length) return;
+
+    const blob = new Blob([historyToCsv(history)], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "lyriclens-history.csv";
+    link.click();
+    URL.revokeObjectURL(url);
+  }
+
   async function importHistory(event) {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -1043,6 +1055,7 @@ function App() {
             historySort={historySort}
             onClear={clearHistory}
             onExport={exportHistory}
+            onExportCsv={exportHistoryCsv}
             onFilterChange={setHistoryFilter}
             onHistoryQueryChange={setHistoryQuery}
             onImport={() => historyInput.current?.click()}
@@ -1193,6 +1206,7 @@ function HistoryPanel({
   historySort,
   onClear,
   onExport,
+  onExportCsv,
   onFilterChange,
   onHistoryQueryChange,
   onImport,
@@ -1236,6 +1250,15 @@ function HistoryPanel({
             onClick={onExport}
           >
             <Download size={15} />
+          </button>
+          <button
+            type="button"
+            className="icon-button tiny"
+            aria-label="Export interpretation history as CSV"
+            title="Export interpretation history as CSV"
+            onClick={onExportCsv}
+          >
+            <FileText size={15} />
           </button>
           <button
             type="button"
@@ -1630,6 +1653,47 @@ function resultToJson(result, context) {
     null,
     2
   );
+}
+
+function historyToCsv(history) {
+  const headers = [
+    "title",
+    "artist",
+    "createdAt",
+    "favorite",
+    "detail",
+    "length",
+    "voice",
+    "audience",
+    "language",
+    "lenses",
+    "words",
+    "lines",
+    "sections"
+  ];
+
+  const rows = history.map((entry) => [
+    entry.title || "Untitled lyrics",
+    entry.artist || "",
+    entry.createdAt || "",
+    entry.favorite ? "yes" : "no",
+    capitalize(entry.detail || "plain"),
+    getLengthLabel(entry.length),
+    getToneLabel(entry.tone),
+    getAudienceLabel(entry.audience),
+    getLanguageLabel(entry.language),
+    normalizeFocus(entry.focus).map(getFocusLabel).join("; "),
+    entry.stats?.words || 0,
+    entry.stats?.lines || 0,
+    entry.stats?.sections || 0
+  ]);
+
+  return [headers, ...rows].map((row) => row.map(csvCell).join(",")).join("\n");
+}
+
+function csvCell(value) {
+  const text = String(value ?? "");
+  return /[",\n\r]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
 }
 
 function getLyricStats(lyrics) {
